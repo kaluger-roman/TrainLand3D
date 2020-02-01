@@ -4,67 +4,91 @@
     <meta charset="UTF-8">
     <title>MasterKufaTrains</title>
     <style>
-        html,
-        body {
-                height: 100%;
-                font-family: 'DejaVu Serif', Georgia, 'Times New Roman', Times, serif;
-            }
-        .textheader{
-            text-align:center;
-            font-style: italic;
-            border-color: #353d50;
-            border-width: 5px;
-            border-style: solid;
-            border-radius:80px;
-            background-color: #500f0b;
-            position: relative;
-            color: #477926;
-            line-height: 300%;
-            position: relative;
-        }
-        .textheader:hover{
-            border-color: red;
-        }
+        @import "animationcss.css";
     </style>
-
 </head>
-<body style="margin: 0; height: 100%">
-<div style="float: top; background-image:url(images/backqr.jpg); width: auto; height: 100%; background-size: 100%,100%; background-repeat: no-repeat;">
-    <div  style="background-image: url(images/dosk30.png); background-size: cover;width: 100%;height: 10%;  font-size: 300%;
-    color: black;  line-height: 200%;text-align:center; font-style: italic">
-            ЛУЧШАЯ ИГРА ВСЕХ ВРЕМЕН...
+<body>
+<div id ="maindiv">
+    <div id="loading" style="position: absolute; z-index: 2; width: 100%; height: 100%;background-color: rgba(0,0,0,0.9);display: flex; justify-content: center; align-items: center">
+        <img id='loadcircle' src="images/hotpng.com-id-cdaol.png" style=" width: 30%; height: 60%; opacity: 50%; z-index: 1;position: absolute">
+        <img src="images/hotpng.com-id-eqzgu.png" style=" width: 20%; height: 30%; opacity: 50%; ">
     </div>
-    <div style="overflow: hidden">
-    <div style="width: 20%; height: 8%; float: left; margin-left: 40%">
-        <object style=" width: 100%; height: 100%" type="application/x-shockwave-flash"   data="images/232.swf">
-            <param name="movie"  />
-            <param name="wmode" value="transparent" />
-            <param name="flashvars" value="&in_title=MasterKufa&" />
-        </object>
+   <script async>
+    let loaddiv=document.getElementById("loading");
+    let loadcircle=document.getElementById('loadcircle');
+    document.addEventListener('DOMContentLoaded', ()=>loaddiv.remove());
+    animate(linear, draw,5000);
+    function linear(timeFraction) {
+    return timeFraction;
+    }
+    function draw(progress) {
+    loadcircle.style.transform=`rotateZ(${progress*1060}deg)`;
+    }
+    function animate(timing, draw, duration) {
+    let start = performance.now();
+    requestAnimationFrame(function animate(time) {
+    let timeFraction = (time - start) / duration;
+    if (timeFraction > 1) timeFraction = 1;
+    let progress = timing(timeFraction);
+    draw(progress); // отрисовать её
+    if (timeFraction < 1) {
+    requestAnimationFrame(animate);
+    }
+    });
+    }
+    </script>
+    <div  id="divheader" >
+        <img   src="images/2mvk.gif" style=" width: 17%;left: 33.7%; top:-5.5%; transform: rotateZ(-8deg)">
+        <img   src="images/3klP.gif" style=" left: 24%; top:230%;width: 10%">
+        <img class="bstgameanim" id="bstgame" src="images/BSTGM.png" style="left: 3%; top: 10%;">
     </div>
-    <div style="width: 20%; height: 30%; float: right;position: relative">
-        <object style="" data="images/924.swf" height="100%" type="application/x-shockwave-flash" width="100%" >
-            <param name="bgcolor" value="#ffffff" /><param name="allowFullScreen" param="" value="true" />
-            <param name="wmode" value="transparent" /><param name="movie" value="" />
-            <param name="flashvars" value="st=;file=" />
-        </object>
+    <div id="descript" >
+        <article id="article">Паровоз – один из самых мощных грузовых транспортов, сконструированных человеком. Он передвигается благодаря паровому двигателю, а его работоспособность обеспечивает мощный котел, в топку которого машинист постоянно подбрасывает уголь или дрова. Такой гигант способен передвигать несколько десятков вагонов, доверху нагруженных углем. Но с появлением в мире электричества паровозы были заменены более мощными и менее затратными электровозами. Поэтому большая их часть была отправлена на переработку и лишь некоторые из них заняли достойные места в специальных транспортных музеях. А порой так хочется погрузиться в прошлое и с ветерком прокатиться на шипящем и выпускающем из своей трубы черные клубы дыма паровозе. И благодаря стараниям разработчиков компьютерных игр это вполне реально.
+        </article>
+    </div>
+    <div id="divbuttons">
+        <a target="_self" href="play.html">
+    <div class="outtextheader" style=" margin: 2% 5% ;">
+         <div class="textheader">
+            <IMG src="images/image%20(3).png" STYLE="height: 80%">
+            <IMG  src="images/kisspngproduct.png" style="width: 30%">
+        </div>
+    </div>
+        </a>
+    <div class="outtextheader" style=" margin: 7% 4%; ">
+        <div class="textheader" >
+            <IMG src="images/image%20(7).png" STYLE="height: 90%">
+            <IMG  src="images/02.png" style="width: 20%;">
+        </div>
+    </div>
+    <div class="outtextheader" style="margin: 12% 3%;">
+        <div class="textheader" >
+            <IMG src="images/image%20(6).png" STYLE="height: 70%">
+            <IMG  src="images/Control.png" style="width: 20%">
+        </div>
+    </div>
+    <div class="outtextheader" style="margin: 17% 2%;white-space: nowrap;">
+        <div class="textheader" >  <IMG src="images/image%20(8).png" STYLE="height: 60%">
+            <IMG  src="images/50.png" style="width: 20%">
+        </div>
     </div>
     </div>
-    <form  style="float: left; width: 80%; height: 30%">
-    <div class="textheader" style="width: 20%; height: 35%;  margin: 17% 0% 1% 5% ; font-size: 25px;">
-        Играть сейчаc
-    </div>
-    <div class="textheader" style="width: 18%; height: 30%;  margin: 1% 4%; font-size: 23px;">
-        Новости проекта
-    </div>
-    <div class="textheader" style="width: 16%; height: 20%;  margin: 1% 3%; font-size: 21px;">
-        Настройки
-    </div>
-    <div class="textheader" style="width: 14%; height: 15%;  margin: 1% 2%; font-size: 19px;">
-       О разработчиках
-    </div>
-    </form>
 </div>
 
+<script type="module" >
+    function btnhover(event){
+        event.target.classList.remove("animatedleavebtn");
+        event.target.classList.add("animatedhoverbtn");
+    }
+    function btnhover1(event){
+        event.target.classList.remove("animatedhoverbtn");
+        event.target.classList.add("animatedleavebtn");
+    }
+    let allbtns=document.querySelectorAll('.textheader');
+              for (let node of allbtns.values()){
+                node.addEventListener(`mouseenter`, btnhover);
+                node.addEventListener(`mouseleave`, btnhover1);
+              }
+</script>
 </body>
 </html>
