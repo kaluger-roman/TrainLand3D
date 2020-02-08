@@ -35,8 +35,8 @@
     const near = 0.1;
     const far = 5000000;
     const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    camera.lookAt(new Vector3(0,0,0));
-    camera.position.set(0,1000,0);
+    //camera.lookAt(new Vector3(0,0,0));
+    camera.position.set(0,400000,0);
     const renderer=new THREE.WebGLRenderer({
         canvas,
         alpha:true,
@@ -57,7 +57,7 @@
         scene.background = cubetextture;
     }
     let controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 9000, 0);
+    controls.target.set(0, 8000, 0);
     {
          //трекбол не работает когда камера на оси у, флацй надо передавать 12 в апдейт дела
         canvas.addEventListener('keydown', movecamera, false);
@@ -138,26 +138,23 @@
             scene.add(root);
             train3dobj=root;
             train3dobj.position.y=80000;
+            train3dobj.position.x=80000;
+            train3dobj.rotateOnAxis(new Vector3(0,1,0),Math.PI/2)
             train3dobj.scale.set(55,55,55);
             let modBB = new THREE.Box3().setFromObject(train3dobj);
             train3dobj.length=modBB.max.x-modBB.min.x;
             train3dobj.width=modBB.max.z-modBB.min.z;
             train3dobj.height=modBB.max.y-modBB.min.y;//возможно перепутана ширина и длина
-            let corner1=new THREE.Object3D();
-            let corner2=new THREE.Object3D();
-            let corner3=new THREE.Object3D();
-            let corner4=new THREE.Object3D();
-            corner1.name='corner1';
-            corner2.name='corner2';
-            corner3.name='corner3';
-            corner4.name='corner4';
-            corner1.position.set(modBB.max.x,modBB.min.y,modBB.max.z);
-            corner2.position.set(modBB.max.x,modBB.min.y,modBB.min.z);
-            corner3.position.set(modBB.min.x,modBB.min.y,modBB.max.z);
-            corner4.position.set(modBB.min.x,modBB.min.y,modBB.min.z);
-            train3dobj.add(corner1, corner2,corner3,corner4);
+            let corner1=new Vector3(modBB.max.x,modBB.min.y,modBB.max.z);
+            let corner2=new Vector3(modBB.max.x,modBB.min.y,modBB.min.z);
+            let corner3=new Vector3(modBB.min.x,modBB.min.y,modBB.max.z);
+            let corner4=new Vector3(modBB.min.x,modBB.min.y,modBB.min.z);
+            let corners=[];
+            corners.push(corner1,corner2,corner3,corner4);
+            train3dobj.corners=corners;
             train3dobj.trainplain=new Plane();
-            train3dobj.trainplain.setFromCoplanarPoints(train3dobj.children[0].position,train3dobj.children[1].position,train3dobj.children[2].position);
+            train3dobj.trainplain.setFromCoplanarPoints(train3dobj.corners[0],train3dobj.corners[1],train3dobj.corners[2]);
+
             requestAnimationFrame( render );//добавить после
         });
     }//паровоз
@@ -165,36 +162,48 @@
     function traingonormalization(curtrain) {
         let upvector=new Vector3(0,-1,0);
         let p=curtrain.position;
-
-        let futureplain=new Plane();
-
         let rays=[];
-            for (let i =1;i<=4;i++){
-                rays.push(new THREE.Raycaster(curtrain.position.addScaledVector(curtrain.getObjectByName(`corner${i}`).position, 1/55), upvector.normalize()));//можно фар и нир понизить
+            for (let i =0;i<4;i++){
+                rays.push(new THREE.Raycaster((curtrain.corners[i]), upvector.normalize()));//можно фар и нир понизить
             }
         let intersect;
-        let corners=[];
+        let flag=false;
+        let corners=curtrain.corners;
         rays.forEach((ray, index,array)=>{
             intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
-            if ( intersect.length >0)
+            if ( (intersect.length >0) && (intersect[0].distance>0))//
             {
-                corners.push(new Vector3(p.x, p.y-intersect[0].distance,p.z));//добавка к высоте чтоб немного выше объекта
+                flag=true;
+                corners.splice(index,1, new Vector3(curtrain.corners[index].x, p.y-intersect[0].distance,curtrain.corners[index].z));//добавка к высоте чтоб немного выше объекта
                // obj.position.y =  obj.position.y-intersect[0].distance+modelBoundingBox.max.y-modelBoundingBox.min.y;
             }
         });
-        corners.sort((a,b)=>{
-           if (a.y>b.y) return 1;
-           if (a.y<b.y) return -1;
-           if (a.y=b.y) return 0;
-        });
-        futureplain.setFromCoplanarPoints(corners[0], corners[3],corners[1]);
-        curtrain.trainplain=futureplain;
-      //  curtrain.rotateOnAxis(futureplain.normal, 0);
-        curtrain.position.y = corners[0].y;
+        if (flag) {
+            corners.sort((a, b) => {
+                if (a.y > b.y) return 1;
+                if (a.y < b.y) return -1;
+                if (a.y = b.y) return 0;
+            });
+            let _vector1 = new Vector3();
+            let _vector2 = new Vector3();
+            let futurenormal = (_vector1.subVectors(corners[0], corners[3]).cross(_vector2.subVectors(corners[1], corners[3])).normalize());//ТУТ ТОЛЬКО НОРМАЛЬ КОНСТ ДО НУЛЯ НЕВЕРНОЕ!!!ИСПОЛЬЗ ФУНКЦИИ
+            curtrain.previousnormalrotation = curtrain.rotation;//
+            let copynormal=new Vector3();
+            copynormal.copy(futurenormal);
+            let copynormal1=new Vector3();
+            copynormal1.copy(futurenormal);
+            curtrain.rotateOnWorldAxis(futurenormal.cross(curtrain.trainplain.normal).negate(), copynormal1.angleTo(curtrain.trainplain.normal));
+            curtrain.position.y = corners[0].y + curtrain.height*2;
+            curtrain.trainplain = new Plane(copynormal, 0);
+        }
     }//выравнивание паровоза или чего то по вертикали чтобы не проваливалось
+
     function render(time) {
         time *= 0.001;
+       train3dobj.position.x+=100;
+
         traingonormalization(train3dobj);
+
         resizerenderertotal(renderer, camera);
         controls.update();
         renderer.render( scene, camera );

@@ -1,0 +1,26 @@
+td{
+    position: relative;
+    border: 0.8vmax solid saddlebrown;
+    border-radius: 3vmax;
+    width: 20%;
+    align-items: center;
+    text-align: center;
+}
+
+td > img{
+    display: block;
+    margin: auto;
+    padding-bottom: 5%;
+    padding-top: 5%;
+    height: 60%;
+}
+table{
+    border-spacing: 1vmax;
+    position: relative;
+    border: 1.5vmax solid saddlebrown;
+    border-radius: 6vmax;
+    width: 80%;
+    margin: auto;
+    background-image: url("images/browntexture.jpg");
+    background-size: cover;
+}

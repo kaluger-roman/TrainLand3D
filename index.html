@@ -1,42 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <title>MasterKufaTrains</title>
-    <style>
-        @import "animationcss.css";
-    </style>
+    <link rel="stylesheet" href="animationcss.css">
 </head>
 <body>
+<div id="loading" style="position: absolute; z-index: 2; width: 100%; height: 100%;background-color: rgba(0,0,0,0.9);display: flex; justify-content: center; align-items: center">
+    <img id='loadcircle' src="images/hotpng.com-id-cdaol.png" style=" width: 30%; height: 60%; opacity: 50%; z-index: 1;position: absolute">
+    <img src="images/hotpng.com-id-eqzgu.png" style=" width: 20%; height: 30%; opacity: 50%; ">
+</div>
 <div id ="maindiv">
-    <div id="loading" style="position: absolute; z-index: 2; width: 100%; height: 100%;background-color: rgba(0,0,0,0.9);display: flex; justify-content: center; align-items: center">
-        <img id='loadcircle' src="images/hotpng.com-id-cdaol.png" style=" width: 30%; height: 60%; opacity: 50%; z-index: 1;position: absolute">
-        <img src="images/hotpng.com-id-eqzgu.png" style=" width: 20%; height: 30%; opacity: 50%; ">
-    </div>
-   <script async>
-    let loaddiv=document.getElementById("loading");
-    let loadcircle=document.getElementById('loadcircle');
-    document.addEventListener('DOMContentLoaded', ()=>loaddiv.remove());
-    animate(linear, draw,5000);
-    function linear(timeFraction) {
-    return timeFraction;
-    }
-    function draw(progress) {
-    loadcircle.style.transform=`rotateZ(${progress*1060}deg)`;
-    }
-    function animate(timing, draw, duration) {
-    let start = performance.now();
-    requestAnimationFrame(function animate(time) {
-    let timeFraction = (time - start) / duration;
-    if (timeFraction > 1) timeFraction = 1;
-    let progress = timing(timeFraction);
-    draw(progress); // отрисовать её
-    if (timeFraction < 1) {
-    requestAnimationFrame(animate);
-    }
-    });
-    }
-    </script>
     <div  id="divheader" >
         <img   src="images/2mvk.gif" style=" width: 17%;left: 33.7%; top:-5.5%; transform: rotateZ(-8deg)">
         <img   src="images/3klP.gif" style=" left: 24%; top:230%;width: 10%">
@@ -48,33 +22,56 @@
     </div>
     <div id="divbuttons">
         <a target="_self" href="play.html">
-    <div class="outtextheader" style=" margin: 2% 5% ;">
-         <div class="textheader">
-            <IMG src="images/image%20(3).png" STYLE="height: 80%">
-            <IMG  src="images/kisspngproduct.png" style="width: 30%">
-        </div>
-    </div>
+            <div class="outtextheader" style=" margin: 2% 5% ;">
+                <div class="textheader">
+                    <IMG src="images/image%20(3).png" STYLE="height: 80%">
+                    <IMG  src="images/kisspngproduct.png" style="width: 30%">
+                </div>
+            </div>
         </a>
-    <div class="outtextheader" style=" margin: 7% 4%; ">
-        <div class="textheader" >
-            <IMG src="images/image%20(7).png" STYLE="height: 90%">
-            <IMG  src="images/02.png" style="width: 20%;">
+        <div class="outtextheader" style=" margin: 7% 4%; ">
+            <div class="textheader" >
+                <IMG src="images/image%20(7).png" STYLE="height: 90%">
+                <IMG  src="images/02.png" style="width: 20%;">
+            </div>
         </div>
-    </div>
-    <div class="outtextheader" style="margin: 12% 3%;">
-        <div class="textheader" >
-            <IMG src="images/image%20(6).png" STYLE="height: 70%">
-            <IMG  src="images/Control.png" style="width: 20%">
+        <div class="outtextheader" style="margin: 12% 3%;">
+            <div class="textheader" >
+                <IMG src="images/image%20(6).png" STYLE="height: 70%">
+                <IMG  src="images/Control.png" style="width: 20%">
+            </div>
         </div>
-    </div>
-    <div class="outtextheader" style="margin: 17% 2%;white-space: nowrap;">
-        <div class="textheader" >  <IMG src="images/image%20(8).png" STYLE="height: 60%">
-            <IMG  src="images/50.png" style="width: 20%">
+        <div class="outtextheader" style="margin: 17% 2%;white-space: nowrap;">
+            <div class="textheader" >  <IMG src="images/image%20(8).png" STYLE="height: 60%">
+                <IMG  src="images/50.png" style="width: 20%">
+            </div>
         </div>
-    </div>
     </div>
 </div>
-
+<script async>
+    let loaddiv=document.getElementById("loading");
+    let loadcircle=document.getElementById('loadcircle');
+    document.addEventListener('DOMContentLoaded', ()=>loaddiv.remove());
+    animate(linear, draw,5000);
+    function linear(timeFraction) {
+        return timeFraction;
+    }
+    function draw(progress) {
+        loadcircle.style.transform=`rotateZ(${progress*1060}deg)`;
+    }
+    function animate(timing, draw, duration) {
+        let start = performance.now();
+        requestAnimationFrame(function animate(time) {
+            let timeFraction = (time - start) / duration;
+            if (timeFraction > 1) timeFraction = 1;
+            let progress = timing(timeFraction);
+            draw(progress); // отрисовать её
+            if (timeFraction < 1) {
+                requestAnimationFrame(animate);
+            }
+        });
+    }
+</script>
 <script type="module" >
     function btnhover(event){
         event.target.classList.remove("animatedleavebtn");
@@ -85,10 +82,10 @@
         event.target.classList.add("animatedleavebtn");
     }
     let allbtns=document.querySelectorAll('.textheader');
-              for (let node of allbtns.values()){
-                node.addEventListener(`mouseenter`, btnhover);
-                node.addEventListener(`mouseleave`, btnhover1);
-              }
+    for (let node of allbtns.values()){
+        node.addEventListener(`mouseenter`, btnhover);
+        node.addEventListener(`mouseleave`, btnhover1);
+    }
 </script>
 </body>
 </html>
