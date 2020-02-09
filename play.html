@@ -127,7 +127,7 @@
             });
         })
     }//вулкан
-
+    let trainsystem;
     {
         objLoader.addMaterials(material);
         material.side = THREE.DoubleSide;
@@ -135,7 +135,7 @@
             /*root.traverse(function (node) {
                 if (node.isMesh) node.material = material;
             });*/
-            scene.add(root);
+
             train3dobj=root;
             train3dobj.position.y=80000;
             train3dobj.position.x=80000;
@@ -154,55 +154,82 @@
             train3dobj.corners=corners;
             train3dobj.trainplain=new Plane();
             train3dobj.trainplain.setFromCoplanarPoints(train3dobj.corners[0],train3dobj.corners[1],train3dobj.corners[2]);
+           trainsystem=new THREE.Object3D;
+           trainsystem.add(train3dobj);
+           let objcorners=corners.map((value) =>{
+                   let ob=new THREE.Object3D();
+                   ob.position.set(value.x,value.y,value.z);
+                   return ob;
+               } );
+           trainsystem.add(...objcorners);
+            scene.add(trainsystem);
 
             requestAnimationFrame( render );//добавить после
         });
     }//паровоз
 
-    function traingonormalization(curtrain) {
+    function traingonormalization(curtrainsystem) {
+        let curtrain=curtrainsystem.children[0];
         let upvector=new Vector3(0,-1,0);
         let p=curtrain.position;
+        try {
+            curtrain.rotateOnWorldAxis(trainsystem.oldaxis, Math.PI*2+trainsystem.oldangle);
+        }
+        catch (e) {
+            console.log('erraaa');
+        }
         let rays=[];
             for (let i =0;i<4;i++){
-                rays.push(new THREE.Raycaster((curtrain.corners[i]), upvector.normalize()));//можно фар и нир понизить
+                rays.push(new THREE.Raycaster((curtrainsystem.children[i+1].position), upvector.normalize()));//можно фар и нир понизить
             }
         let intersect;
         let flag=false;
-        let corners=curtrain.corners;
+        let corners=[curtrainsystem.children[1],curtrainsystem.children[2],curtrainsystem.children[3],curtrainsystem.children[4]];
+        curtrainsystem.oldcorners=corners;
         rays.forEach((ray, index,array)=>{
             intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
             if ( (intersect.length >0) && (intersect[0].distance>0))//
             {
                 flag=true;
-                corners.splice(index,1, new Vector3(curtrain.corners[index].x, p.y-intersect[0].distance,curtrain.corners[index].z));//добавка к высоте чтоб немного выше объекта
+                let newcorn=new THREE.Object3D();
+                newcorn.position.set(corners[index].position.x+curtrainsystem.position.x, p.y-intersect[0].distance,corners[index].position.z+curtrainsystem.position.z);//убрать прибавление позиции системы многократное каждый раз
+                corners.splice(index,1, newcorn);
+                curtrainsystem.children[index+1]=newcorn;
                // obj.position.y =  obj.position.y-intersect[0].distance+modelBoundingBox.max.y-modelBoundingBox.min.y;
             }
         });
         if (flag) {
             corners.sort((a, b) => {
-                if (a.y > b.y) return 1;
-                if (a.y < b.y) return -1;
-                if (a.y = b.y) return 0;
+                if (a.position.y > b.position.y) return 1;
+                if (a.position.y < b.position.y) return -1;
+                if (a.position.y = b.position.y) return 0;
             });
             let _vector1 = new Vector3();
             let _vector2 = new Vector3();
-            let futurenormal = (_vector1.subVectors(corners[0], corners[3]).cross(_vector2.subVectors(corners[1], corners[3])).normalize());//ТУТ ТОЛЬКО НОРМАЛЬ КОНСТ ДО НУЛЯ НЕВЕРНОЕ!!!ИСПОЛЬЗ ФУНКЦИИ
-            curtrain.previousnormalrotation = curtrain.rotation;//
+            let futurenormal = (_vector1.subVectors(corners[0].position, corners[3].position).cross(_vector2.subVectors(corners[1].position, corners[3].position)).normalize());//ТУТ ТОЛЬКО НОРМАЛЬ КОНСТ ДО НУЛЯ НЕВЕРНОЕ!!!ИСПОЛЬЗ ФУНКЦИИ
             let copynormal=new Vector3();
             copynormal.copy(futurenormal);
             let copynormal1=new Vector3();
             copynormal1.copy(futurenormal);
-            curtrain.rotateOnWorldAxis(futurenormal.cross(curtrain.trainplain.normal).negate(), copynormal1.angleTo(curtrain.trainplain.normal));
-            curtrain.position.y = corners[0].y + curtrain.height*2;
+            trainsystem.oldaxis=futurenormal.cross(curtrain.trainplain.normal).negate();
+                trainsystem.oldangle=copynormal1.angleTo(curtrain.trainplain.normal);
+            curtrain.rotateOnWorldAxis( trainsystem.oldaxis,   trainsystem.oldangle);
+            curtrain.position.y = corners[0].position.y + curtrain.height*2;
             curtrain.trainplain = new Plane(copynormal, 0);
+            trainsystem.children.forEach((c,i)=>{
+                if(i>0){
+                    c=trainsystem.oldcorners[i-1];
+                }
+            });
+
         }
     }//выравнивание паровоза или чего то по вертикали чтобы не проваливалось
 
     function render(time) {
-        time *= 0.001;
-       train3dobj.position.x+=100;
+        time *= 0.1;
+     // trainsystem.position.x+=1;
+        traingonormalization(trainsystem);
 
-        traingonormalization(train3dobj);
 
         resizerenderertotal(renderer, camera);
         controls.update();
