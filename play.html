@@ -206,11 +206,28 @@
            let arrowHelper = new THREE.ArrowHelper( train3dobj.trainplain.normal, train3dobj.position, 50000, 0x666666);
             cornersystem.add(helper4);
             train3dobj.add(helper2);
+
             scene.add(train3dobj, helper3,arrowHelper);
 
            setInterval(()=>traingonormalization(train3dobj),30);
 
-//traingonormalization(train3dobj);
+         /*  train3dobj.children.forEach((child)=>{
+               let p=child.position;
+               let s=train3dobj.scale;
+               p.set(p.x+train3dobj.width/s.x,p.y+train3dobj.height/s.y,p.z+train3dobj.length/s.z)});*/
+            /*train3dobj = new Proxy( train3dobj, {
+                get(target, prop, receiver) { // receiver
+                    let reflect= Reflect.get(target, prop, receiver);
+                    if (prop == 'position') {
+                        let diff = new Vector3();
+
+                        diff.subVectors(cornersystem.position, reflect);
+                        let cp = cornersystem.position;
+                        cp.set(reflect.x+target.width/15,reflect.y+10000,reflect.z-target.length*2.5);
+                }
+                    return typeof reflect == 'function' ? reflect.bind(target) : reflect; // (*)
+                }});*/
+
             requestAnimationFrame( render );//добавить после
         });
     }//паровоз
@@ -329,12 +346,11 @@
             /*let oldposcorn=[];
             corners.forEach((value => {let nv=new Vector3();
             oldposcorn.push(nv.copy(value.getWorldPosition()))}));*/
-            let quaternion1=new THREE.Quaternion();
-            quaternion1.setFromUnitVectors(upvector,curtrain.trainplain.normal);
+
             let quaternion2=new THREE.Quaternion();
-            quaternion2.setFromUnitVectors(curtrain.oldaxis,upvector);
+            quaternion2.setFromUnitVectors(curtrain.oldaxis.normalize(),curtrain.trainplain.normal.normalize());
             curtrain.applyQuaternion(quaternion2);
-            curtrain.applyQuaternion(quaternion1);
+           // curtrain.applyQuaternion(quaternion1);
 
             //curtrain.rotateOnAxis( curtrain.oldaxis.cross((curtrain.trainplain.normal)  ),   curtrain.oldaxis.angleTo(curtrain.trainplain.normal));
 
@@ -358,10 +374,10 @@
     }//выравнивание паровоза или чего то по вертикали чтобы не проваливалось
 
     function render(time) {
-        time *= 0.00000001;
-        train3dobj.cornersystem.position.x+=100;
-        train3dobj.cornersystem.rotation.y=1.57;
-        train3dobj.rotation.y=1.57;
+        time *= 0.0001;
+        train3dobj.position.x+=100;
+        //train3dobj.cornersystem.rotation.y=1.57;
+        //train3dobj.rotation.y=1.57;
       train3dobj.updateMatrix();
       train3dobj.updateMatrixWorld();
       //train3dobj.children[35].updateWorldMatrix();
