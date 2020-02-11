@@ -28,36 +28,45 @@
     import {TrackballControls} from "./js/three.js-master/examples/jsm/controls/TrackballControls.js";
 
 
+
     let canvas=document.getElementById('canv');
     const scene=new THREE.Scene();
-    const fov = 75;
-    const aspect = 2;  // the canvas default
-    const near = 0.1;
-    const far = 5000000;
-    const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    //camera.lookAt(new Vector3(0,0,0));
+
+    const camera = new THREE.PerspectiveCamera(75, 2, 0.1, 5000000);
     camera.position.set(0,400000,0);
+
     const renderer=new THREE.WebGLRenderer({
         canvas,
         alpha:true,
         logarithmicDepthBuffer: true,
     });
     renderer.autoClearColor = false;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    let controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 8000, 0);
+
+    const light = new THREE.DirectionalLight(0xFFFFFF, 1);
+    light.position.set(0, 10000, 0);
+    light.target.position.set(-5, 0, 0);
+    scene.add(light);
+    scene.add(light.target);
+
     const MTLlod=new MTLLoader();
     const loader=new THREE.TextureLoader();
-    {
-        const cubemaploader = new THREE.CubeTextureLoader();
-        const cubetextture = cubemaploader.load([
+    const cubemaploader = new THREE.CubeTextureLoader();
+    const objLoader = new OBJLoader2();
+
+    const cubetextture = cubemaploader.load([
             './images/ely_hills/eezabad_ft.jpg',
             './images/ely_hills/eezabad_bk.jpg',
             './images/ely_hills/eezabad_up.jpg',
             './images/ely_hills/eezabad_dn.jpg',
             './images/ely_hills/eezabad_rt.jpg',
             './images/ely_hills/eezabad_lf.jpg']);
-        scene.background = cubetextture;
-    }
-    let controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 8000, 0);
+    scene.background = cubetextture;
+    //задний план
+
     {
          //трекбол не работает когда камера на оси у, флацй надо передавать 12 в апдейт дела
         canvas.addEventListener('keydown', movecamera, false);
@@ -95,18 +104,7 @@
             controls.update();
         }
     }//контролы и  камера
-    renderer.setSize(window.innerWidth, window.innerHeight);
 
-    const color = 0xFFFFFF;
-    const intensity = 1;
-    const light = new THREE.DirectionalLight(color, intensity);
-    light.position.set(0, 10000, 0);
-    light.target.position.set(-5, 0, 0);
-    scene.add(light);
-    scene.add(light.target);
-
-    let material=new THREE.MeshBasicMaterial({ map:  loader.load('./images/montagne.jpg')});
-    const objLoader = new OBJLoader2();
     let train3dobj, volcanoobj3d;
     {
         const objLoader = new OBJLoader2();
@@ -116,19 +114,16 @@
                 material.side = THREE.DoubleSide;
             }
             objLoader.addMaterials(volcmaterials);
-            objLoader.load('./images/volcano/volcano0201.obj', (root) => {
-                /* root.traverse(function (node) {
-                 if (node.isMesh) node.material = material;
-             });*/
+            objLoader.load('./images/volcano/volcano0201.obj', (root) => {   //traverse перебрать потомков есть
                 scene.add(root);
                 root.modelBoundingBox = new THREE.Box3().setFromObject(root);
-
                 volcanoobj3d=root;
             });
         })
     }//вулкан
 
     {
+        let material=new THREE.MeshBasicMaterial({ map:  loader.load('./images/montagne.jpg')});
         objLoader.addMaterials(material);
         material.side = THREE.DoubleSide;
         objLoader.load('./images/Sci_fi_Train.obj', (root) => {
@@ -137,14 +132,12 @@
             train3dobj.position.x=-70000;
             train3dobj.scale.set(500,500,500);
 
-
             let cornersystem;
 
             let modBB = new THREE.Box3().setFromObject(train3dobj);
             train3dobj.length=modBB.max.x-modBB.min.x;
             train3dobj.width=modBB.max.z-modBB.min.z;
             train3dobj.height=modBB.max.y-modBB.min.y;//возможно перепутана ширина и длина
-
 
             let corner1= new THREE.Mesh(new THREE.SphereBufferGeometry(1000, 6, 6),new THREE.MeshPhongMaterial({emissive: 0xCCFF99}));
             let corner2= new THREE.Mesh(new THREE.SphereBufferGeometry(1000, 6, 6),new THREE.MeshPhongMaterial({emissive: 0xFFFF00}));            //выбрать 3 угол
@@ -158,16 +151,6 @@
 
             corner3.position.lerp(corner4.position, 0.5);
 
-                corner1.offsettrain=new Vector3();
-                corner2.offsettrain=new Vector3();
-                corner3.offsettrain=new Vector3();
-                corner4.offsettrain=new Vector3();
-
-                corner1.offsettrain.subVectors(corner1.position, train3dobj.position);
-                corner2.offsettrain.subVectors(corner2.position, train3dobj.position);
-                corner3.offsettrain.subVectors(corner3.position, train3dobj.position);
-                corner4.offsettrain.subVectors(corner4.position, train3dobj.position);
-
             corner1.name='corner1';
             corner2.name='corner2';
             corner3.name='corner3';
@@ -180,6 +163,7 @@
                     opacity: 0.5,
                     transparent: true,
                 }));
+
             let p=train3dobj.position;
             cornersystem.position.set(p.x,p.y,p.z);
             train3dobj.cornersystem=cornersystem;
@@ -192,119 +176,59 @@
             train3dobj.trainplain=new Plane();
             train3dobj.trainplain.setFromCoplanarPoints(cornersystem.getChildByName('corner1').getWorldPosition(),cornersystem.getChildByName('corner2').getWorldPosition(),cornersystem.getChildByName('corner3').getWorldPosition());//или position
 
-            let forw;
-            forw=(new Vector3(1,0,0));
-            train3dobj.forwarddirrect =  forw;
+            train3dobj.forwarddirrect =  new Vector3(1, 0, 0);
             // в какую сторону направлен нос с учетом поворота поверхности
             train3dobj.lookforward=function(){
                 let angle, nvector1, nvector2;
                 nvector1=new Vector3();
                 nvector2=new Vector3();
 
+                function ncross(obj, trainonj){
+                    nvector1.crossVectors(trainonj.forwarddirrect, new Vector3(0,1,0)).normalize();
+                    nvector2.crossVectors(obj.getWorldDirection(), new Vector3(0,1,0)).normalize();
+                }
 
-                /*nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
-                nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
-                angle=nvector1.angleTo(nvector2);
-                train3dobj.rotateOnWorldAxis(new Vector3(0,1,0), angle);
-               // cornersystem.rotateOnWorldAxis(new Vector3(0,1,0), angle);
-                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
-                nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
-                angle=nvector1.angleTo(nvector2);
-                if (angle!=0){
-                    train3dobj.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle);
-                   // cornersystem.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle); //???
-                }*/
+                ncross(train3dobj, train3dobj);
 
-
-                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
-                nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
                 angle=nvector1.angleTo(nvector2);
                 train3dobj.rotateOnAxis(new Vector3(0,1,0), angle);
-                // cornersystem.rotateOnWorldAxis(new Vector3(0,1,0), angle);
-                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
-                nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
+
+                ncross(train3dobj,train3dobj);
 
                 if (angle< nvector1.angleTo(nvector2)){
                     train3dobj.rotateOnAxis(new Vector3(0,-1,0), 2*angle);
-                    // cornersystem.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle); //???
                 }
 
+               ncross(cornersystem, train3dobj);
 
-
-                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
-                nvector2.crossVectors(cornersystem.getWorldDirection(), new Vector3(0,1,0)).normalize();
                 angle=nvector1.angleTo(nvector2);
                 cornersystem.rotateOnWorldAxis(new Vector3(0,1,0), angle);
-                // cornersystem.rotateOnWorldAxis(new Vector3(0,1,0), angle);
-                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
-                nvector2.crossVectors(cornersystem.getWorldDirection(), new Vector3(0,1,0)).normalize();
-                angle=nvector1.angleTo(nvector2);
-                if (angle!=0){
+
+                ncross(cornersystem, train3dobj);
+
+                if (angle< nvector1.angleTo(nvector2)){
                     cornersystem.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle);
-                    // cornersystem.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle); //???
                 }
+            };
 
-                /*let modBB = new THREE.Box3().setFromObject(train3dobj);
-                corner1.position.set(modBB.max.x,modBB.min.y,modBB.max.z);
-                corner2.position.set(modBB.max.x,modBB.min.y,modBB.min.z);
-                corner3.position.set(modBB.min.x,modBB.min.y,modBB.max.z);
-                corner4.position.set(modBB.min.x,modBB.min.y,modBB.min.z);
-                let v1=new Vector3();
-                let v2=new Vector3();
-                let a1 =Math.sqrt(v1.copy(corner2.position).sub(corner1.position).lengthSq());
-                let a2 =Math.sqrt(v2.copy(corner2.position).sub(corner3.position).lengthSq());
-                let ang;
-                if (a1>a2){
-                    ang= cornersystem.getWorldDirection().angleTo(v1);
-                    cornersystem.rotateOnWorldAxis(new Vector3(0, 1,0), ang);
-                    ang= cornersystem.getWorldDirection().angleTo(v1);
-                        if(ang!==0){
-                            cornersystem.rotateOnWorldAxis(new Vector3(0, -1,0), 2*ang);
-                        }
-                }
-                else{
-                    ang= cornersystem.getWorldDirection().angleTo(v2);
-                    cornersystem.rotateOnWorldAxis(new Vector3(0, 1,0), ang);
-                    ang= cornersystem.getWorldDirection().angleTo(v1);
-                    if(ang!==0){
-                        cornersystem.rotateOnWorldAxis(new Vector3(0, -1,0), 2*ang);
-                    }
-                }*/
-                // cornersystem.lookAt(train3dobj.position+train3dobj.localToWorld(cornersystem.corner1.offsettrain).divideScalar(train3dobj.scale.y));
+            {
+                let helper2 = new THREE.AxisHelper(50000000);
+                let helper3 = new THREE.AxisHelper(50000000);
+                let helper4 = new THREE.AxisHelper(50000000);
+                cornersystem.add(helper4);
+                train3dobj.add(helper2);
+                scene.add(train3dobj, helper3);//потом удалить помощников
             }
-            //setInterval(()=>train3dobj.lookforward(),300);
-
-          /*  train3dobj.rotateOnAxis(train3dobj.trainplain.normal,Math.PI/3); //вокруг этой оси надо разворачивать при преобразовании координат к локакльным в нормализейшн
-            train3dobj.rotateOnAxis(new Vector3(0,0,1),Math.PI/12);
-            train3dobj.trainplain.normal.applyAxisAngle(new Vector3(0,0,1),Math.PI/12);*/
-
-          /* train3dobj.rotateOnAxis((new Vector3(0,0,1)), -train3dobj.trainplain.normal.angleTo(new Vector3(0,1,0)) );
-           train3dobj.rotateOnAxis(new Vector3(0,1,0),- train3dobj.getWorldDirection().angleTo(new Vector3(0,0,1)) );*/
-
-            let helper=new THREE.BoxHelper(train3dobj,  0xFFFF00);
-            let helper2=new THREE.AxisHelper(50000000);
-            let helper3=new THREE.AxisHelper(50000000);
-            let helper4=new THREE.AxisHelper(50000000);
-            cornersystem.add(helper4);
-            train3dobj.add(helper2);
-
-            scene.add(train3dobj, helper3);
-
-         //  setInterval(()=>traingonormalization(train3dobj),30);
-
 
             train3dobj = new Proxy( train3dobj, {
-                get(target, prop, receiver) { // receiver
+                get(target, prop, receiver) {
                     let reflect= Reflect.get(target, prop, receiver);
-                    if (prop == 'position') {
+                    if (prop === 'position') {
                         let diff = new Vector3();
-
                         diff.subVectors(cornersystem.position, reflect);
                         let cp = cornersystem.position;
                         cp.set(reflect.x,reflect.y+10000,reflect.z);
-                       // cornersystem.rotation.y=target.rotation.y;
                 }
-
                     return typeof reflect == 'function' ? reflect.bind(target) : reflect; // (*)
                 }});
 
@@ -318,84 +242,47 @@
         let intersect;
         let flag=false;
         let corners=[cors.getChildByName('corner1'),cors.getChildByName('corner2'),cors.getChildByName('corner3')];
-        scene.updateMatrixWorld();
-        curtrain.updateMatrixWorld();
-        volcanoobj3d.updateMatrixWorld();
-        cors.updateMatrixWorld();
-
         let raysup=[];
+        let raysdown=[];
         let upvector=new Vector3(0,1,0);
         let downvector=new Vector3(0,-1,0);
-        for (let i =1;i<4;i++){
-            raysup.push(new THREE.Raycaster(cors.localToWorld((new Vector3()).copy(cors.getChildByName(`corner${i}`).position)), upvector.normalize()));//можно фар и нир понизить
-        }
-        raysup.forEach((ray, index)=>{
-            intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
-            if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/50))//
-            {
-                flag=true;
-                let curpos=new Vector3();
-                curpos.copy(corners[index].position);
-                let curworldposoftrain=new Vector3();
-                curworldposoftrain.copy(cors.position);
-                curworldposoftrain.addScaledVector(cors.getChildByName(`corner${index+1}`).position, cors.scale.y);
 
-                let futureworldpos=new Vector3(curworldposoftrain.x, intersect[0].point.y+100, curworldposoftrain.z);
-                let futureposlocal=cors.worldToLocal(futureworldpos);
-                //futureposlocal.applyAxisAngle((new Vector3(0,0,1)), curtrain.trainplain.normal.angleTo(new Vector3(0,1,0)) );
-                if (cors.getWorldDirection().angleTo(new Vector3(1,0,0))<=Math.PI/2){
-                    futureposlocal.applyAxisAngle(upvector, cors.getWorldDirection().angleTo(new Vector3(0,0,1)) );
-                }
-                else {
-                    futureposlocal.applyAxisAngle(downvector, cors.getWorldDirection().angleTo(new Vector3(0,0,1)) );
-                }
-                cors.getChildByName(`corner${index+1}`).position.set(futureposlocal.x, futureposlocal.y, futureposlocal.z);//убрать прибавление позиции системы многократное каждый раз
+       raycastt(upvector,raysup);
+       raycastt(downvector,raysdown);
+       function raycastt(vector, masrays) {
+           scene.updateMatrixWorld();
+           curtrain.updateMatrixWorld();
+           volcanoobj3d.updateMatrixWorld();
+           cors.updateMatrixWorld();
+           for (let i =1;i<4;i++){
+               masrays.push(new THREE.Raycaster(cors.localToWorld((new Vector3()).copy(cors.getChildByName(`corner${i}`).position)), vector.normalize()));//можно фар и нир понизить
+           }
+           masrays.forEach((ray, index)=>{
+               intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
+               if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/50))//
+               {
+                   flag=true;
+                   let curpos=new Vector3();
+                   curpos.copy(corners[index].position);
+                   let curworldposoftrain=new Vector3();
+                   curworldposoftrain.copy(cors.position);
+                   curworldposoftrain.addScaledVector(cors.getChildByName(`corner${index+1}`).position, cors.scale.y);
 
-            }
-        });
+                   let futureworldpos=new Vector3(curworldposoftrain.x, intersect[0].point.y+100, curworldposoftrain.z);
+                   let futureposlocal=cors.worldToLocal(futureworldpos);
+                   if (cors.getWorldDirection().angleTo(new Vector3(1,0,0))<=Math.PI/2){
+                       futureposlocal.applyAxisAngle(upvector, cors.getWorldDirection().angleTo(new Vector3(0,0,1)) );
+                   }
+                   else {
+                       futureposlocal.applyAxisAngle(downvector, cors.getWorldDirection().angleTo(new Vector3(0,0,1)) );
+                   }
+                   cors.getChildByName(`corner${index+1}`).position.set(futureposlocal.x, futureposlocal.y, futureposlocal.z);//убрать прибавление позиции системы многократное каждый раз
 
-        scene.updateMatrixWorld();
-        curtrain.updateMatrixWorld();
-        volcanoobj3d.updateMatrixWorld();
-        cors.updateMatrixWorld();
-
-
-        let rays=[];
-        for (let i =1;i<4;i++){
-            rays.push(new THREE.Raycaster(cors.localToWorld((new Vector3()).copy(cors.getChildByName(`corner${i}`).position)), downvector.normalize()));//можно фар и нир понизить
-        }
-
-
-
-        rays.forEach((ray, index)=>{
-            intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
-            if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/50))//
-            {
-                flag=true;
-                let curpos=new Vector3();
-                curpos.copy(corners[index].position);
-                let curworldposoftrain=new Vector3();
-                curworldposoftrain.copy(cors.position);
-                curworldposoftrain.addScaledVector(cors.getChildByName(`corner${index+1}`).position, cors.scale.y);
-
-                let futureworldpos=new Vector3(curworldposoftrain.x, intersect[0].point.y+100, curworldposoftrain.z);
-                let futureposlocal=cors.worldToLocal(futureworldpos);
-                //futureposlocal.applyAxisAngle((new Vector3(0,0,1)), curtrain.trainplain.normal.angleTo(new Vector3(0,1,0)) );
-                if (cors.getWorldDirection().angleTo(new Vector3(1,0,0))<=Math.PI/2){
-                    futureposlocal.applyAxisAngle(upvector, cors.getWorldDirection().angleTo(new Vector3(0,0,1)) );
-                }
-                else {
-                    futureposlocal.applyAxisAngle(downvector, cors.getWorldDirection().angleTo(new Vector3(0,0,1)) );
-                }
-
-                cors.getChildByName(`corner${index+1}`).position.set(futureposlocal.x, futureposlocal.y, futureposlocal.z);//необъяснимый костыль, оси х и з
-
-            }
-        });
-
+               }
+           });
+       }
 
         /////////////////////////
-
 
 
         if (flag) {
@@ -406,30 +293,18 @@
                 if (ap.y < bp.y) return -1;
                 if (ap.y = bp.y) return 0;
             });
-            let _vector1 = new Vector3();
-            let _vector2 = new Vector3();
-            //let futurenormal = (_vector1.subVectors(corners[0].getWorldPosition().divideScalar(curtrain.scale.y), corners[2].getWorldPosition().divideScalar(curtrain.scale.y)).cross(_vector2.subVectors(corners[1].getWorldPosition().divideScalar(curtrain.scale.y), corners[2].getWorldPosition().divideScalar(curtrain.scale.y))).normalize());//ТУТ ТОЛЬКО НОРМАЛЬ КОНСТ ДО НУЛЯ НЕВЕРНОЕ!!!ИСПОЛЬЗ ФУНКЦИИ
+
             curtrain.oldaxis=new Vector3();
             curtrain.oldaxis.copy(curtrain.trainplain.normal);
             curtrain.trainplain.setFromCoplanarPoints(corners[0].getWorldPosition().divideScalar(cors.scale.y), corners[1].getWorldPosition().divideScalar(cors.scale.y),corners[2].getWorldPosition().divideScalar(cors.scale.y));
             if(curtrain.trainplain.normal.angleTo(upvector)>=Math.PI/2){
                 curtrain.trainplain.normal.negate();
             }
-       /*    let helper= new THREE.PlaneHelper(curtrain.trainplain, 5000000);
-            scene.add(helper);*/
-
 
             let quaternion2=new THREE.Quaternion();
             quaternion2.setFromUnitVectors(curtrain.oldaxis.normalize(),curtrain.trainplain.normal.normalize());
             curtrain.applyQuaternion(quaternion2);
             curtrain.position.y=corners[2].getWorldPosition().y;
-
-            /*let ang=curtrain.localToWorld(upvector).angleTo(curtrain.trainplain.normal);
-            curtrain.rotateOnWorldAxis(curtrain.getWorldDirection(), ang);
-            if (curtrain.localToWorld(upvector).angleTo(curtrain.trainplain.normal)>ang){
-                curtrain.rotateOnWorldAxis(curtrain.getWorldDirection().negate(), 2*ang);
-            }*/
-
         }
 
     }//выравнивание паровоза или чего то по вертикали чтобы не проваливалось
@@ -441,24 +316,19 @@
         train3dobj.position.z=190000*Math.sin(time);
         train3dobj.forwarddirrect=new Vector3(190000*Math.cos(time+1.5),0,190000*Math.sin(time+1.5))
 
-
-       /* train3dobj.position.x+=100;
+     /*   train3dobj.position.x+=100;
         train3dobj.forwarddirrect=new Vector3(1,0,0);*/
 
-        //train3dobj.cornersystem.rotation.y=1.57;
-        //train3dobj.rotation.y=1.57;
       train3dobj.updateMatrix();
       train3dobj.updateMatrixWorld();
-      //train3dobj.children[35].updateWorldMatrix();
-      //console.log(train3dobj.children[35].getWorldPosition());
-     // train3dobj.dispatchEvent(postrainevent);
+
      if (volcanoobj3d!==undefined)
         traingonormalization(train3dobj);
-
 
         resizerenderertotal(renderer, camera);
         controls.update();
         renderer.render( scene, camera );
+
         requestAnimationFrame( render);
     }
 </script>
