@@ -127,18 +127,18 @@
             });
         })
     }//вулкан
-    let cornersystem;
+
     {
         objLoader.addMaterials(material);
         material.side = THREE.DoubleSide;
-        objLoader.load('./images/ldm12.obj', (root) => {
+        objLoader.load('./images/Sci_fi_Train.obj', (root) => {
             train3dobj=root;
             train3dobj.position.y=80000;
             train3dobj.position.x=-70000;
-            train3dobj.scale.set(50,50,50);
+            train3dobj.scale.set(500,500,500);
 
 
-
+            let cornersystem;
 
             let modBB = new THREE.Box3().setFromObject(train3dobj);
             train3dobj.length=modBB.max.x-modBB.min.x;
@@ -181,7 +181,7 @@
                     transparent: true,
                 }));
             let p=train3dobj.position;
-            cornersystem.position.set(p.x+train3dobj.width/15,p.y,p.z-train3dobj.length*2.5);
+            cornersystem.position.set(p.x,p.y,p.z);
             train3dobj.cornersystem=cornersystem;
             scene.add(cornersystem);
 
@@ -191,6 +191,28 @@
 
             train3dobj.trainplain=new Plane();
             train3dobj.trainplain.setFromCoplanarPoints(cornersystem.getChildByName('corner1').getWorldPosition(),cornersystem.getChildByName('corner2').getWorldPosition(),cornersystem.getChildByName('corner3').getWorldPosition());//или position
+
+            let forw=new Vector3();
+            forw=(new Vector3(0,0,1));
+            train3dobj.forwarddirrect =  forw;
+            // в какую сторону направлен нос с учетом поворота поверхности
+            train3dobj.lookforward=function(){
+                let angle, nvector1, nvector2;
+                nvector1=new Vector3();
+                nvector2=new Vector3();
+                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
+                nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
+                angle=nvector1.angleTo(nvector2);
+                train3dobj.rotateOnWorldAxis(new Vector3(0,1,0), angle);
+                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
+                nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
+                angle=nvector1.angleTo(nvector2);
+                if (angle!=0){
+                    train3dobj.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle);
+                }
+
+            }
+            setInterval(()=>train3dobj.lookforward(),300);
 
           /*  train3dobj.rotateOnAxis(train3dobj.trainplain.normal,Math.PI/3); //вокруг этой оси надо разворачивать при преобразовании координат к локакльным в нормализейшн
             train3dobj.rotateOnAxis(new Vector3(0,0,1),Math.PI/12);
@@ -203,19 +225,15 @@
             let helper2=new THREE.AxisHelper(50000000);
             let helper3=new THREE.AxisHelper(50000000);
             let helper4=new THREE.AxisHelper(50000000);
-           let arrowHelper = new THREE.ArrowHelper( train3dobj.trainplain.normal, train3dobj.position, 50000, 0x666666);
             cornersystem.add(helper4);
             train3dobj.add(helper2);
 
-            scene.add(train3dobj, helper3,arrowHelper);
+            scene.add(train3dobj, helper3);
 
-           setInterval(()=>traingonormalization(train3dobj),30);
+         //  setInterval(()=>traingonormalization(train3dobj),30);
 
-         /*  train3dobj.children.forEach((child)=>{
-               let p=child.position;
-               let s=train3dobj.scale;
-               p.set(p.x+train3dobj.width/s.x,p.y+train3dobj.height/s.y,p.z+train3dobj.length/s.z)});*/
-            /*train3dobj = new Proxy( train3dobj, {
+
+            train3dobj = new Proxy( train3dobj, {
                 get(target, prop, receiver) { // receiver
                     let reflect= Reflect.get(target, prop, receiver);
                     if (prop == 'position') {
@@ -223,10 +241,12 @@
 
                         diff.subVectors(cornersystem.position, reflect);
                         let cp = cornersystem.position;
-                        cp.set(reflect.x+target.width/15,reflect.y+10000,reflect.z-target.length*2.5);
+                        cp.set(reflect.x,reflect.y+10000,reflect.z);
+                        cornersystem.rotation.y=target.rotation.y;
                 }
+
                     return typeof reflect == 'function' ? reflect.bind(target) : reflect; // (*)
-                }});*/
+                }});
 
             requestAnimationFrame( render );//добавить после
         });
@@ -250,7 +270,7 @@
         }
         raysup.forEach((ray, index)=>{
             intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
-            if ( (intersect.length >0) && (intersect[0].distance>150))//
+            if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/8))//
             {
                 flag=true;
                 let curpos=new Vector3();
@@ -288,7 +308,7 @@
 
         rays.forEach((ray, index)=>{
             intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
-            if ( (intersect.length >0) && (intersect[0].distance>150))//
+            if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/8))//
             {
                 flag=true;
                 let curpos=new Vector3();
@@ -337,37 +357,11 @@
        /*    let helper= new THREE.PlaneHelper(curtrain.trainplain, 5000000);
             scene.add(helper);*/
 
-           /* let copynormal=new Vector3();
-            copynormal.copy(futurenormal);
-            let copynormal1=new Vector3();
-            copynormal1.copy(futurenormal);
-            curtrain.oldaxis=futurenormal.cross(curtrain.trainplain.normal).negate();*/
-            //curtrain.oldangle=copynormal1.angleTo(curtrain.trainplain.normal);
-            /*let oldposcorn=[];
-            corners.forEach((value => {let nv=new Vector3();
-            oldposcorn.push(nv.copy(value.getWorldPosition()))}));*/
 
             let quaternion2=new THREE.Quaternion();
             quaternion2.setFromUnitVectors(curtrain.oldaxis.normalize(),curtrain.trainplain.normal.normalize());
             curtrain.applyQuaternion(quaternion2);
-           // curtrain.applyQuaternion(quaternion1);
-
-            //curtrain.rotateOnAxis( curtrain.oldaxis.cross((curtrain.trainplain.normal)  ),   curtrain.oldaxis.angleTo(curtrain.trainplain.normal));
-
-        /*    corners.forEach(((value, index) => {
-                value.position.setComponent(1, oldposcorn[index].y+300);
-            }));*/
-           // curtrain.position.y = corners[0].position.y + curtrain.height;
-
-
-           // corners.forEach((value => value.position.y+=curtrain.height));
-
-           // curtrain.trainplain = new Plane(copynormal, 0);
-            /*trainsystem.children.forEach((c,i)=>{
-                if(i>0){
-                    c=trainsystem.oldcorners[i-1];
-                }
-            });*/
+            curtrain.position.y=corners[2].getWorldPosition().y;
 
         }
 
@@ -375,7 +369,7 @@
 
     function render(time) {
         time *= 0.0001;
-        train3dobj.position.x+=100;
+        train3dobj.position.z+=100;
         //train3dobj.cornersystem.rotation.y=1.57;
         //train3dobj.rotation.y=1.57;
       train3dobj.updateMatrix();
@@ -383,7 +377,8 @@
       //train3dobj.children[35].updateWorldMatrix();
       //console.log(train3dobj.children[35].getWorldPosition());
      // train3dobj.dispatchEvent(postrainevent);
-     //traingonormalization(train3dobj);
+     if (volcanoobj3d!==undefined)
+        traingonormalization(train3dobj);
 
 
         resizerenderertotal(renderer, camera);
