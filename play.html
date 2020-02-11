@@ -192,27 +192,87 @@
             train3dobj.trainplain=new Plane();
             train3dobj.trainplain.setFromCoplanarPoints(cornersystem.getChildByName('corner1').getWorldPosition(),cornersystem.getChildByName('corner2').getWorldPosition(),cornersystem.getChildByName('corner3').getWorldPosition());//или position
 
-            let forw=new Vector3();
-            forw=(new Vector3(0,0,1));
+            let forw;
+            forw=(new Vector3(1,0,0));
             train3dobj.forwarddirrect =  forw;
             // в какую сторону направлен нос с учетом поворота поверхности
             train3dobj.lookforward=function(){
                 let angle, nvector1, nvector2;
                 nvector1=new Vector3();
                 nvector2=new Vector3();
-                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
+
+
+                /*nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
                 nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
                 angle=nvector1.angleTo(nvector2);
                 train3dobj.rotateOnWorldAxis(new Vector3(0,1,0), angle);
+               // cornersystem.rotateOnWorldAxis(new Vector3(0,1,0), angle);
                 nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
                 nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
                 angle=nvector1.angleTo(nvector2);
                 if (angle!=0){
                     train3dobj.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle);
+                   // cornersystem.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle); //???
+                }*/
+
+
+                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
+                nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
+                angle=nvector1.angleTo(nvector2);
+                train3dobj.rotateOnAxis(new Vector3(0,1,0), angle);
+                // cornersystem.rotateOnWorldAxis(new Vector3(0,1,0), angle);
+                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
+                nvector2.crossVectors(train3dobj.getWorldDirection(), new Vector3(0,1,0)).normalize();
+
+                if (angle< nvector1.angleTo(nvector2)){
+                    train3dobj.rotateOnAxis(new Vector3(0,-1,0), 2*angle);
+                    // cornersystem.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle); //???
                 }
 
+
+
+                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
+                nvector2.crossVectors(cornersystem.getWorldDirection(), new Vector3(0,1,0)).normalize();
+                angle=nvector1.angleTo(nvector2);
+                cornersystem.rotateOnWorldAxis(new Vector3(0,1,0), angle);
+                // cornersystem.rotateOnWorldAxis(new Vector3(0,1,0), angle);
+                nvector1.crossVectors(train3dobj.forwarddirrect, new Vector3(0,1,0)).normalize();
+                nvector2.crossVectors(cornersystem.getWorldDirection(), new Vector3(0,1,0)).normalize();
+                angle=nvector1.angleTo(nvector2);
+                if (angle!=0){
+                    cornersystem.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle);
+                    // cornersystem.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle); //???
+                }
+
+                /*let modBB = new THREE.Box3().setFromObject(train3dobj);
+                corner1.position.set(modBB.max.x,modBB.min.y,modBB.max.z);
+                corner2.position.set(modBB.max.x,modBB.min.y,modBB.min.z);
+                corner3.position.set(modBB.min.x,modBB.min.y,modBB.max.z);
+                corner4.position.set(modBB.min.x,modBB.min.y,modBB.min.z);
+                let v1=new Vector3();
+                let v2=new Vector3();
+                let a1 =Math.sqrt(v1.copy(corner2.position).sub(corner1.position).lengthSq());
+                let a2 =Math.sqrt(v2.copy(corner2.position).sub(corner3.position).lengthSq());
+                let ang;
+                if (a1>a2){
+                    ang= cornersystem.getWorldDirection().angleTo(v1);
+                    cornersystem.rotateOnWorldAxis(new Vector3(0, 1,0), ang);
+                    ang= cornersystem.getWorldDirection().angleTo(v1);
+                        if(ang!==0){
+                            cornersystem.rotateOnWorldAxis(new Vector3(0, -1,0), 2*ang);
+                        }
+                }
+                else{
+                    ang= cornersystem.getWorldDirection().angleTo(v2);
+                    cornersystem.rotateOnWorldAxis(new Vector3(0, 1,0), ang);
+                    ang= cornersystem.getWorldDirection().angleTo(v1);
+                    if(ang!==0){
+                        cornersystem.rotateOnWorldAxis(new Vector3(0, -1,0), 2*ang);
+                    }
+                }*/
+                // cornersystem.lookAt(train3dobj.position+train3dobj.localToWorld(cornersystem.corner1.offsettrain).divideScalar(train3dobj.scale.y));
             }
-            setInterval(()=>train3dobj.lookforward(),300);
+            //setInterval(()=>train3dobj.lookforward(),300);
 
           /*  train3dobj.rotateOnAxis(train3dobj.trainplain.normal,Math.PI/3); //вокруг этой оси надо разворачивать при преобразовании координат к локакльным в нормализейшн
             train3dobj.rotateOnAxis(new Vector3(0,0,1),Math.PI/12);
@@ -242,7 +302,7 @@
                         diff.subVectors(cornersystem.position, reflect);
                         let cp = cornersystem.position;
                         cp.set(reflect.x,reflect.y+10000,reflect.z);
-                        cornersystem.rotation.y=target.rotation.y;
+                       // cornersystem.rotation.y=target.rotation.y;
                 }
 
                     return typeof reflect == 'function' ? reflect.bind(target) : reflect; // (*)
@@ -253,6 +313,7 @@
     }//паровоз
 
     function traingonormalization(curtrain) {
+        train3dobj.lookforward();
         let cors=train3dobj.cornersystem;
         let intersect;
         let flag=false;
@@ -270,7 +331,7 @@
         }
         raysup.forEach((ray, index)=>{
             intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
-            if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/8))//
+            if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/50))//
             {
                 flag=true;
                 let curpos=new Vector3();
@@ -308,7 +369,7 @@
 
         rays.forEach((ray, index)=>{
             intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
-            if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/8))//
+            if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/50))//
             {
                 flag=true;
                 let curpos=new Vector3();
@@ -363,13 +424,27 @@
             curtrain.applyQuaternion(quaternion2);
             curtrain.position.y=corners[2].getWorldPosition().y;
 
+            /*let ang=curtrain.localToWorld(upvector).angleTo(curtrain.trainplain.normal);
+            curtrain.rotateOnWorldAxis(curtrain.getWorldDirection(), ang);
+            if (curtrain.localToWorld(upvector).angleTo(curtrain.trainplain.normal)>ang){
+                curtrain.rotateOnWorldAxis(curtrain.getWorldDirection().negate(), 2*ang);
+            }*/
+
         }
 
     }//выравнивание паровоза или чего то по вертикали чтобы не проваливалось
 
     function render(time) {
         time *= 0.0001;
-        train3dobj.position.z+=100;
+
+        train3dobj.position.x=190000*Math.cos(time);
+        train3dobj.position.z=190000*Math.sin(time);
+        train3dobj.forwarddirrect=new Vector3(190000*Math.cos(time+1.5),0,190000*Math.sin(time+1.5))
+
+
+       /* train3dobj.position.x+=100;
+        train3dobj.forwarddirrect=new Vector3(1,0,0);*/
+
         //train3dobj.cornersystem.rotation.y=1.57;
         //train3dobj.rotation.y=1.57;
       train3dobj.updateMatrix();
