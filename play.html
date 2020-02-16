@@ -4,13 +4,110 @@
     <meta charset="UTF-8">
     <title>Play KufaTrains</title>
     <link rel="stylesheet" href="PLAYCSS.css">
+    <link rel="stylesheet" href="routescss.css">
 </head>
 <body>
-<canvas id="canv">
 
-</canvas>
+<div id="mainflex">
+    <canvas id="canv" >
 
+    </canvas>
+    <div id="mainpanelgrid">
+        <div id="mainpanel"><img id='arrowdp' src="images/arrowdown.png">панель</div>
+    </div>
+    <div id="leftpanel">
+        <div id="innerleftpanel">
+            <img id='arrowlp' src="images/arrowleft.png">
+            <img class="iconleftpanel" data-allcities="true" src="images/home.png">
+            <span class="iconheadersleftpanel">Города Влияния</span>
+            <img class="iconleftpanel" data-allroutbtn="true" src="images/mapicon.png">
+            <span class="iconheadersleftpanel">Маршруты</span>
+        </div>
+    </div>
+    <div id="avatar">картинка персонажа</div>
+    <div id="MAP">картинка персонажа</div>
+    <div id="toppanel">картинка персонажа</div>
+    <div id="clock"></div>
+    <div id="RoutesWindow">
+        <h1 id="routwndheader">Мои Маршруты</h1>
+        <img src="images/krestikdlyokon.png" id="exitroutwindowbtn">
+        <span class="str1"> </span>
+    </div>
+</div>
+<script>
+    let arrowlp=document.getElementById('arrowlp');
+    let innerleftpanel=document.getElementById('innerleftpanel');
+    let arrowdp=document.getElementById('arrowdp');
+    let mainpanel=document.getElementById('mainpanel');
+    let mainflex=document.getElementById('mainflex');
+    let citiesbtn=document.querySelector("[data-allroutbtn]");
+    let routeswindow=document.getElementById('RoutesWindow');
+    let exitrotesbtn=document.getElementById('exitroutwindowbtn');
+    let conterl=0;
+    let conterd=0;
+    arrowlp.onclick=(event)=>{
+        conterl+=1;
+        event.stopPropagation();
+        if(conterl%2===0){
+            arrowlp.classList.remove('rotatearrowback');
+            arrowlp.classList.add('rotatearrowclass');
+            innerleftpanel.classList.remove('openpanell');
+            innerleftpanel.classList.add('hidepanell');
 
+        }
+        else {
+            arrowlp.classList.remove('rotatearrowclass');
+            arrowlp.classList.add('rotatearrowback');
+            innerleftpanel.classList.remove('hidepanell');
+            innerleftpanel.classList.add('openpanell');
+        }
+    };
+    arrowdp.onclick=(event)=>{
+        conterd+=1;
+        event.stopPropagation();
+        if(conterd%2===0){
+            arrowdp.classList.remove('rotatearrowback');
+            arrowdp.classList.add('rotatearrowclass');
+            mainpanel.classList.remove('openpaneld');
+            mainpanel.classList.add('hidepaneld');
+
+        }
+        else {
+            arrowdp.classList.remove('rotatearrowclass');
+            arrowdp.classList.add('rotatearrowback');
+            mainpanel.classList.remove('hidepaneld');
+            mainpanel.classList.add('openpaneld');
+        }
+    };
+    citiesbtn.onclick=(event)=>{
+       if (routeswindow.style.visibility=='hidden'){
+           routeswindow.style.visibility='visible';
+       }
+       else {
+           routeswindow.style.visibility='hidden';
+       }
+    }
+    exitrotesbtn.onclick=(event)=>routeswindow.style.visibility='hidden';
+
+</script>
+<script>//скрипт часов
+    let clockelem=document.getElementById('clock');
+    let servertimestamp=0;//получить с сервера
+    let formatter = new Intl.DateTimeFormat("ru", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour:'numeric',
+        minute:'numeric'
+    });
+    let clock=new Date(servertimestamp);
+    setTimeout(function clockgo() {
+        clock.setTime(clock.getTime()+3600*1000);
+        clockelem.innerHTML=(formatter.format(clock));
+        setTimeout(clockgo, 1000);
+    },1000);
+
+</script>
 <script id='mainscenescript' type="module">
     import * as THREE from './js/three.js-master/build/three.module.js';
     import {OrbitControls} from './js/three.js-master/examples/jsm/controls/OrbitControls.js';
@@ -18,6 +115,7 @@
     import {OBJLoader2} from './js/three.js-master/examples/jsm/loaders/OBJLoader2.js';
     import {Vector3} from "./js/three.js-master/src/math/Vector3.js";
     import {Plane} from "./js/three.js-master/src/math/Plane.js";
+    import {train3dobj,volcanoobj3d,canvas,scene,camera,renderer,controls,light,MTLlod,loader,cubemaploader,objLoader,cubetextture} from"./GameScript.js";
     import {MTLLoader} from "./js/three.js-master/examples/jsm/loaders/MTLLoader.js";
     import {MtlObjBridge} from "./js/three.js-master/examples/jsm/loaders/obj2/bridge/MtlObjBridge.js";
     import {LineMaterial} from "./js/three.js-master/examples/jsm/lines/LineMaterial.js";
@@ -27,50 +125,35 @@
     import {FlyControls} from "./js/three.js-master/examples/jsm/controls/FlyControls.js";
     import {TrackballControls} from "./js/three.js-master/examples/jsm/controls/TrackballControls.js";
 
+    function promisify(f) {
+        return function (...args) { // возвращает функцию-обёртку
+            return new Promise((resolve, reject) => {
+                function callback(err, result) { // наш специальный колбэк для f
+                    if (err) {
+                        return reject(err);
+                    } else {
+                        resolve(result);
+                    }
+                }
+                args.push(callback); // добавляем колбэк в конец аргументов f
+                f.call(this, ...args); // вызываем оригинальную функцию
+            });
+        };
+    };
 
 
-    let canvas=document.getElementById('canv');
-    const scene=new THREE.Scene();
-
-    const camera = new THREE.PerspectiveCamera(75, 2, 0.1, 5000000);
-    camera.position.set(0,400000,0);
-
-    const renderer=new THREE.WebGLRenderer({
-        canvas,
-        alpha:true,
-        logarithmicDepthBuffer: true,
-    });
-    renderer.autoClearColor = false;
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    let controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 8000, 0);
-
-    const light = new THREE.DirectionalLight(0xFFFFFF, 1);
-    light.position.set(0, 10000, 0);
-    light.target.position.set(-5, 0, 0);
-    scene.add(light);
-    scene.add(light.target);
-
-    const MTLlod=new MTLLoader();
-    const loader=new THREE.TextureLoader();
-    const cubemaploader = new THREE.CubeTextureLoader();
-    const objLoader = new OBJLoader2();
-
-    const cubetextture = cubemaploader.load([
-            './images/ely_hills/eezabad_ft.jpg',
-            './images/ely_hills/eezabad_bk.jpg',
-            './images/ely_hills/eezabad_up.jpg',
-            './images/ely_hills/eezabad_dn.jpg',
-            './images/ely_hills/eezabad_rt.jpg',
-            './images/ely_hills/eezabad_lf.jpg']);
-    scene.background = cubetextture;
-    //задний план
 
     {
          //трекбол не работает когда камера на оси у, флацй надо передавать 12 в апдейт дела
-        canvas.addEventListener('keydown', movecamera, false);
-
+        let curbtns={};
+        canvas.addEventListener('keydown',(event)=>{
+            curbtns[event.code]=true;
+            movecamera(event)}
+        , false);
+        canvas.addEventListener('keyup', (event)=>{
+                delete curbtns[event.code];
+                movecamera(event)}
+            , false);
         function movecamera(event) {             //https://learn.javascript.ru/task/check-sync-keydown доделать чтобы по диагонали
             let z = controls.target.z;
             let y = controls.target.y;
@@ -80,6 +163,45 @@
             let camx = camera.position.x;
             let arvect = camera.getWorldDirection();
             arvect = arvect.normalize().multiplyScalar(10000);
+
+            if (curbtns.KeyW && curbtns.KeyD){
+                arvect.applyAxisAngle(new Vector3(0, 1, 0), -Math.PI / 4);
+                camera.position.set(camx + arvect.x, camy, camz + arvect.z);
+                controls.target.set(x + arvect.x, y, z + arvect.z);
+                camera.updateProjectionMatrix();
+                controls.update();
+                return;
+            }
+            else if(curbtns.KeyW && curbtns.KeyA){
+                arvect.applyAxisAngle(new Vector3(0, 1, 0), Math.PI / 4);
+                camera.position.set(camx + arvect.x, camy, camz + arvect.z);
+                controls.target.set(x + arvect.x, y, z + arvect.z);
+                camera.updateProjectionMatrix();
+                controls.update();
+                return;;
+            }
+            else if(curbtns.KeyS && curbtns.KeyA){
+                arvect.applyAxisAngle(new Vector3(0, 1, 0), -Math.PI / 4);
+                camera.position.set(camx - arvect.x, camy, camz - arvect.z);
+                controls.target.set(x - arvect.x, y, z - arvect.z);
+                camera.updateProjectionMatrix();
+                controls.update();
+                return;
+            }
+            else if(curbtns.KeyS && curbtns.KeyD){
+                arvect.applyAxisAngle(new Vector3(0, 1, 0), Math.PI / 4);
+                camera.position.set(camx - arvect.x, camy, camz - arvect.z);
+                controls.target.set(x - arvect.x, y, z - arvect.z);
+                camera.updateProjectionMatrix();
+                controls.update();
+                return;
+            }
+            else if(curbtns.KeyS && curbtns.KeyW){
+                return;
+            }
+            else if(curbtns.KeyA && curbtns.KeyD){
+                return;
+            }
             switch (event.code) {
                 case 'KeyW':
                     camera.position.set(camx + arvect.x, camy, camz + arvect.z);
@@ -105,136 +227,8 @@
         }
     }//контролы и  камера
 
-    let train3dobj, volcanoobj3d;
-    {
-        const objLoader = new OBJLoader2();
-        MTLlod.load('./images/volcano/volcano0201.mtl', (mtpresult) => {
-            const volcmaterials = MtlObjBridge.addMaterialsFromMtlLoader(mtpresult);
-            for (const material of Object.values(volcmaterials)) {
-                material.side = THREE.DoubleSide;
-            }
-            objLoader.addMaterials(volcmaterials);
-            objLoader.load('./images/volcano/volcano0201.obj', (root) => {   //traverse перебрать потомков есть
-                scene.add(root);
-                root.modelBoundingBox = new THREE.Box3().setFromObject(root);
-                volcanoobj3d=root;
-            });
-        })
-    }//вулкан
 
-    {
-        let material=new THREE.MeshBasicMaterial({ map:  loader.load('./images/montagne.jpg')});
-        objLoader.addMaterials(material);
-        material.side = THREE.DoubleSide;
-        objLoader.load('./images/Sci_fi_Train.obj', (root) => {
-            train3dobj=root;
-            train3dobj.position.y=80000;
-            train3dobj.position.x=-70000;
-            train3dobj.scale.set(500,500,500);
 
-            let cornersystem;
-
-            let modBB = new THREE.Box3().setFromObject(train3dobj);
-            train3dobj.length=modBB.max.x-modBB.min.x;
-            train3dobj.width=modBB.max.z-modBB.min.z;
-            train3dobj.height=modBB.max.y-modBB.min.y;//возможно перепутана ширина и длина
-
-            let corner1= new THREE.Mesh(new THREE.SphereBufferGeometry(1000, 6, 6),new THREE.MeshPhongMaterial({emissive: 0xCCFF99}));
-            let corner2= new THREE.Mesh(new THREE.SphereBufferGeometry(1000, 6, 6),new THREE.MeshPhongMaterial({emissive: 0xFFFF00}));            //выбрать 3 угол
-            let corner3= new THREE.Mesh(new THREE.SphereBufferGeometry(1000, 6, 6),new THREE.MeshPhongMaterial({emissive: 0xFFFF00}));
-            let corner4= new THREE.Mesh(new THREE.SphereBufferGeometry(1000, 6, 6),new THREE.MeshPhongMaterial({emissive: 0xFFFF00}));
-
-            corner1.position.set(modBB.max.x,modBB.min.y,modBB.max.z);
-            corner2.position.set(modBB.max.x,modBB.min.y,modBB.min.z);
-            corner3.position.set(modBB.min.x,modBB.min.y,modBB.max.z);
-            corner4.position.set(modBB.min.x,modBB.min.y,modBB.min.z);
-
-            corner3.position.lerp(corner4.position, 0.5);
-
-            corner1.name='corner1';
-            corner2.name='corner2';
-            corner3.name='corner3';
-            corner4.name='corner4';
-
-            cornersystem=new THREE.Mesh(
-                new THREE.BoxGeometry( train3dobj.length, train3dobj.height, train3dobj.width),
-                new THREE.MeshPhongMaterial({
-                    color: 0xFFFFFF,
-                    opacity: 0.5,
-                    transparent: true,
-                }));
-
-            let p=train3dobj.position;
-            cornersystem.position.set(p.x,p.y,p.z);
-            train3dobj.cornersystem=cornersystem;
-            scene.add(cornersystem);
-
-            cornersystem.attach(corner1);
-            cornersystem.attach(corner2); //когда add масштабируется и прикпрепляется а attach прикрепляется просто(аттач координаты из внешнего мира и просто крепит), адд переводит во внутренний мир
-            cornersystem.attach(corner3);
-
-            train3dobj.trainplain=new Plane();
-            train3dobj.trainplain.setFromCoplanarPoints(cornersystem.getChildByName('corner1').getWorldPosition(),cornersystem.getChildByName('corner2').getWorldPosition(),cornersystem.getChildByName('corner3').getWorldPosition());//или position
-
-            train3dobj.forwarddirrect =  new Vector3(1, 0, 0);
-            // в какую сторону направлен нос с учетом поворота поверхности
-            train3dobj.lookforward=function(){
-                let angle, nvector1, nvector2;
-                nvector1=new Vector3();
-                nvector2=new Vector3();
-
-                function ncross(obj, trainonj){
-                    nvector1.crossVectors(trainonj.forwarddirrect, new Vector3(0,1,0)).normalize();
-                    nvector2.crossVectors(obj.getWorldDirection(), new Vector3(0,1,0)).normalize();
-                }
-
-                ncross(train3dobj, train3dobj);
-
-                angle=nvector1.angleTo(nvector2);
-                train3dobj.rotateOnAxis(new Vector3(0,1,0), angle);
-
-                ncross(train3dobj,train3dobj);
-
-                if (angle< nvector1.angleTo(nvector2)){
-                    train3dobj.rotateOnAxis(new Vector3(0,-1,0), 2*angle);
-                }
-
-               ncross(cornersystem, train3dobj);
-
-                angle=nvector1.angleTo(nvector2);
-                cornersystem.rotateOnWorldAxis(new Vector3(0,1,0), angle);
-
-                ncross(cornersystem, train3dobj);
-
-                if (angle< nvector1.angleTo(nvector2)){
-                    cornersystem.rotateOnWorldAxis(new Vector3(0,-1,0), 2*angle);
-                }
-            };
-
-            {
-                let helper2 = new THREE.AxisHelper(50000000);
-                let helper3 = new THREE.AxisHelper(50000000);
-                let helper4 = new THREE.AxisHelper(50000000);
-                cornersystem.add(helper4);
-                train3dobj.add(helper2);
-                scene.add(train3dobj, helper3);//потом удалить помощников
-            }
-
-            train3dobj = new Proxy( train3dobj, {
-                get(target, prop, receiver) {
-                    let reflect= Reflect.get(target, prop, receiver);
-                    if (prop === 'position') {
-                        let diff = new Vector3();
-                        diff.subVectors(cornersystem.position, reflect);
-                        let cp = cornersystem.position;
-                        cp.set(reflect.x,reflect.y+10000,reflect.z);
-                }
-                    return typeof reflect == 'function' ? reflect.bind(target) : reflect; // (*)
-                }});
-
-            requestAnimationFrame( render );//добавить после
-        });
-    }//паровоз
 
     function traingonormalization(curtrain) {
         train3dobj.lookforward();
@@ -305,10 +299,11 @@
             quaternion2.setFromUnitVectors(curtrain.oldaxis.normalize(),curtrain.trainplain.normal.normalize());
             curtrain.applyQuaternion(quaternion2);
             curtrain.position.y=corners[2].getWorldPosition().y;
+
         }
 
     }//выравнивание паровоза или чего то по вертикали чтобы не проваливалось
-
+    setTimeout(()=>requestAnimationFrame( render ),3000);//добавить после
     function render(time) {
         time *= 0.0001;
 
@@ -322,7 +317,6 @@
       train3dobj.updateMatrix();
       train3dobj.updateMatrixWorld();
 
-     if (volcanoobj3d!==undefined)
         traingonormalization(train3dobj);
 
         resizerenderertotal(renderer, camera);

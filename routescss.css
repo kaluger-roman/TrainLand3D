@@ -1,0 +1,36 @@
+#RoutesWindow{
+    grid-column-start: 2;
+    grid-column-end: 5;
+    grid-row-start: 2;
+    grid-row-end: 4;
+    position: relative;
+    z-index: 100;
+    display: grid;
+    background-size: cover;
+    background-image: url("images/800x500.jpg");
+    border-image: url(images/ram.jpg) 10% 7% 10% 7% round round;
+    border-color: #9e9e9e;
+    border-width: 2vmin;
+    border-style: solid;
+    height: 90%;
+    width: 80%;
+    margin: auto;
+    visibility: hidden;
+
+    grid-template-columns: 20% 80%;
+    grid-template-rows: repeat(15,1fr);
+}
+#routwndheader{
+    position: absolute;
+    left: 35%;
+    top:-20%;
+    font-weight: bold;
+    color: #6F0752;
+    font-family: 'Comic Sans MS','DejaVu Serif', Georgia, 'Times New Roman', Times, serif, fantasy;
+}
+#exitroutwindowbtn{
+    position: absolute;
+    width: 4%;
+    height: 7%;
+    left: 96%;
+}

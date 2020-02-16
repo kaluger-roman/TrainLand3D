@@ -3,10 +3,205 @@ body {
     width: 100%;
     height: 100% ;
     overflow: hidden;
+    position: absolute;
+    cursor: url("images/Ecliz/Arrow.cur"), default;
 }
-.canv {
+#canv {
     width: 100%;
     height: 100% ;
     display: block;
+    position: absolute;
+    z-index: 1;
+    grid-column-start: 1;
+    grid-column-end:6;
+    grid-row-start: 1;
+    grid-row-end: 4;
+}
 
+#mainflex{
+    width: 100%;
+    height: 100% ;
+    display: grid;
+    grid-template-columns: 12% 14% 48% 14% 12%;
+    grid-template-rows: 15% 10% 55% 10% 10%;
+    position: absolute;
+}
+#mainpanelgrid{
+    grid-column-start: 3;
+    grid-column-end: 4;
+    grid-row-start: 4;
+    grid-row-end: 6;
+    position: relative;
+    z-index: 10;
+    display: flex;
+}
+#mainpanel{
+    width: 100%;
+    background-size: cover;
+    background-image: url("images/800x500.jpg");
+    border-image: url(images/ram.jpg) 10% 7% 10% 7% round round;
+    border-color: #9e9e9e;
+    border-width: 2vmin;
+    border-style: solid;
+
+}
+.hidepaneld{
+    transform: translateY(13vmin);
+    transition-duration: 1s;
+    transition-timing-function: ease-in-out;
+}
+.openpaneld{
+    transform: translateY(0vmin);
+    transition-duration: 1s;
+    transition-timing-function: ease-in-out;
+}
+
+#arrowdp{
+    width: 8%;
+    height:40%;
+    float: right;
+    position: relative;
+    left: 2%;
+    top:-3%;
+}
+.iconleftpanel:hover{
+    transform: scale(1.1);
+}
+.iconheadersleftpanel:hover{
+    color: #860600;
+}
+.iconleftpanel{
+    width: 50%;
+    height: 17%;
+    position: relative;
+    margin-left: 6%;
+}
+.iconheadersleftpanel{
+    position: relative;
+    font-weight: bold;
+    color: #6F0752;
+    font-family: 'Comic Sans MS','DejaVu Serif', Georgia, 'Times New Roman', Times, serif, fantasy;
+    font-size: large;
+}
+#leftpanel{
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background-size: cover;
+    grid-column-start: 1;
+    grid-column-end: 2;
+    grid-row-start: 2;
+    grid-row-end: 4;
+}
+#innerleftpanel{
+    text-align: center;
+    margin-left: 0vmin;
+    width: 80%;
+    height: 90%;
+    background-image: url("images/800x500.jpg");
+    position: relative;
+    border-color: #9e9e9e;
+    border-right-width: 1vmin;
+    border-style: solid;
+    border-bottom-right-radius:15vmax;
+    border-top-right-radius:1vmax;
+}
+.hidepanell{
+    transform: translateX(-15vmin);
+    transition-duration: 1s;
+    transition-timing-function: ease-in-out;
+}
+.openpanell{
+    transform: translateX(0vmin);
+    transition-duration: 1s;
+    transition-timing-function: ease-in-out;
+}
+#arrowlp{
+    width: 34%;
+    height:6%;
+    position: absolute;
+    left: 70%;
+}
+.rotatearrowclass{
+    transform: rotatez(180deg);
+    transition-duration: 1s;
+    transition-timing-function: ease-in-out;
+}
+.rotatearrowback{
+    transform: rotateZ(0deg);
+    transition-duration: 1s;
+    transition-timing-function: ease-in-out;
+}
+#avatar{
+    margin-top: 8%;
+    z-index: 10;
+    width: 90%;
+    position: relative;
+    background-size: cover;
+    background-image: url("images/800x500.jpg");
+    border-radius: 50%;
+    grid-column-start: 5;
+    grid-column-end: 6;
+    grid-row-start: 1;
+    grid-row-end: 3;
+    border-color: #9e9e9e;
+    border-width: 0.1vmin;
+    border-style: solid;
+}
+#MAP{
+    z-index: 10;
+    width: 90%;
+    position: relative;
+    background-size: cover;
+    background-image: url("images/800x500.jpg");
+    grid-column-start: 5;
+    grid-column-end: 6;
+    grid-row-start: 4;
+    grid-row-end: 6;
+    border-image: url(images/ram.jpg) 10% 7% 10% 7% round round;
+    border-color: #9e9e9e;
+    border-width: 1vmin;
+    border-style: solid;
+}
+#toppanel{
+    z-index: 10;
+    width: 70%;
+    height: 35%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0.1vmax;
+    position: relative;
+    background-size: cover;
+    background-image: url("images/800x500.jpg");
+    border-image: url(images/ram.jpg) 10% 7% 10% 7% round round;
+    grid-column-start: 3;
+    grid-column-end: 4;
+    grid-row-start: 1;
+    grid-row-end: 2;
+    border-width: 1vmin;
+    border-style: solid;
+}
+#clock{
+    grid-column-start: 1;
+    grid-column-end: 2;
+    grid-row-start: 1;
+    grid-row-end: 2;
+    position: relative;
+    z-index: 10;
+    background-size: cover;
+    background-image: url("images/800x500.jpg");
+    border-image: url(images/ram.jpg) 10% 7% 10% 7% round round;
+    border-color: #9e9e9e;
+    border-width: 2vmin;
+    border-style: solid;
+    height: 60%;
+    width: 100%;
+    margin: auto;
+    font-weight: bold;
+    color: #6F0752;
+    font-family: 'Comic Sans MS','DejaVu Serif', Georgia, 'Times New Roman', Times, serif, fantasy;
+    font-size: large;
+    text-align: center;
+    
 }
