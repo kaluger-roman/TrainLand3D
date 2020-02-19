@@ -350,19 +350,20 @@ export async function roaddifinitionclick(objectpath)
             let rightcorn1=road3dobj.getChildByName('rightcorner1');
             let rightcorn2=road3dobj.getChildByName('rightcorner2');
 
-            let posleftc=leftcorn1.position;
+            let posleftc1=leftcorn1.position;
             let posleftc2=leftcorn2.position;
-            //let posrightc=righcorn.position;
+            let nearestcornertogo=pl.distanceTo(leftcorn1.getWorldPosition())<pl.distanceTo(leftcorn2.getWorldPosition())?posleftc1:posleftc2;
+
 
             let vect1=new Vector3();
             let vect2=new Vector3();
             let rightcorntorotate;
 
-            let resultleft=(new Vector3()).copy(pl).addScaledVector(vect1.copy(posleftc).negate(),road3dobj.scale.x);
+            let resultleft=(new Vector3()).copy(pl).addScaledVector(vect1.copy(nearestcornertogo).negate(),road3dobj.scale.x);
 
-            let resultleft2=(new Vector3()).copy(pl).addScaledVector(vect2.copy(posleftc2).negate(),road3dobj.scale.x);
+            //let resultleft2=(new Vector3()).copy(pl).addScaledVector(vect2.copy(posleftc2).negate(),road3dobj.scale.x);
 
-            let res;
+          /*  let res;
             if(resultleft.distanceTo(pointofmouse)<resultleft2.distanceTo(pointofmouse)){
                 res=resultleft;
                 rightcorntorotate=rightcorn1;
@@ -370,18 +371,20 @@ export async function roaddifinitionclick(objectpath)
             else {
                 res=resultleft2;
                 rightcorntorotate=rightcorn2;
-            }
+            }*/
+
+
 
             //let resultright=pr.sub(posrightc);
 
             let rotangle;
-         /*   rotangle=(new Vector3()).subVectors(righ+tcorntorotate.getWorldPosition(),res).angleTo((new Vector3()).subVectors(pr,pl));
+            /*rotangle=(new Vector3()).subVectors(righ+tcorntorotate.getWorldPosition(),res).angleTo((new Vector3()).subVectors(pr,pl));
             road3dobj.rotateOnWorldAxis(new Vector3(0,1,0),rotangle);
 
             if((new Vector3()).subVectors(rightcorntorotate.position,res).angleTo((new Vector3()).subVectors(pr,pl))>0){
                 road3dobj.rotateOnWorldAxis(new Vector3(0,1,0),-2*rotangle);
             }*/
-            road3dobj.position.set(res.x,res.y, res.z);
+           road3dobj.position.set(resultleft.x,resultleft.y, resultleft.z);
 
         };
 

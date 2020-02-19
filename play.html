@@ -160,13 +160,19 @@
 
                         masinncorns.forEach((mascouplecorns, index)=>{
                             mascouplecorns.forEach((value, index)=>{
-                                if (p.distanceTo(value.getWorldPosition())<Math.min(road.width, road.length)){//коэффициент для того чтобы найти ряждом какие чужие углы
-                                   nearcorns.push(mascouplecorns);
+                                let dist=p.distanceTo(value.getWorldPosition());
+                                if (dist<Math.max(road.width, road.length)){//коэффициент для того чтобы найти ряждом какие чужие углы
+                                   nearcorns.push({mascouplecorns,dist});
                             }});
                         });
                     }
-                    if(nearcorns.length===1){
-                        road.positionbytwocorners(nearcorns[0][0].getWorldPosition(),nearcorns[0][1].getWorldPosition(),p);
+                    nearcorns.sort((a,b)=>{
+                        if (a.dist > b.dist) return 1;
+                        if (a.dist < b.dist) return -1;
+                        if (a.dist = b.dist) return 0;
+                    });
+                    if(nearcorns.length>0){
+                        road.positionbytwocorners(nearcorns[0].mascouplecorns[0].getWorldPosition(),nearcorns[0].mascouplecorns[1].getWorldPosition(),p);
 
 
                     }
