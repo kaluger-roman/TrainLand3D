@@ -13,7 +13,10 @@
 
     </canvas>
     <div id="mainpanelgrid">
-        <div id="mainpanel"><img id='arrowdp' src="images/arrowdown.png">панель</div>
+        <div id="mainpanel">
+            <img id='arrowdp' src="images/arrowdown.png">        <img id="addroadbtn" src="images/roadicon.png">
+        </div>
+
     </div>
     <div id="leftpanel">
         <div id="innerleftpanel">
@@ -31,10 +34,30 @@
     <div id="RoutesWindow">
         <h1 id="routwndheader">Мои Маршруты</h1>
         <img src="images/krestikdlyokon.png" id="exitroutwindowbtn">
-        <span class="str1"> </span>
+        <span class="tablerouteheader">Номер поезда</span>
+        <span class="tablerouteheader">Откуда</span>
+        <span class="tablerouteheader">Куда</span>
+        <span class="tablerouteheader">Отправление</span>
+        <span class="tablerouteheader">Прибытие</span>
+
+
     </div>
 </div>
-<script>
+<script type="module">
+    import {roaddifinitionclick,camera,volcanoobj3d, traingonormalization,scene,canvas} from "./GameScript.js";
+    import * as THREE from './js/three.js-master/build/three.module.js';
+
+    var mouse = new THREE.Vector2();
+    function onDocumentMouseMove( event ) {
+        event.preventDefault();
+        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    }
+    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+
+
+
     let arrowlp=document.getElementById('arrowlp');
     let innerleftpanel=document.getElementById('innerleftpanel');
     let arrowdp=document.getElementById('arrowdp');
@@ -43,6 +66,8 @@
     let citiesbtn=document.querySelector("[data-allroutbtn]");
     let routeswindow=document.getElementById('RoutesWindow');
     let exitrotesbtn=document.getElementById('exitroutwindowbtn');
+    let addroad=document.getElementById('addroadbtn');
+
     let conterl=0;
     let conterd=0;
     arrowlp.onclick=(event)=>{
@@ -88,11 +113,105 @@
        }
     }
     exitrotesbtn.onclick=(event)=>routeswindow.style.visibility='hidden';
+    ////////////////////////////////////////////////////////////
+    let innercornersroadmap=new Map;
+    let addroadactive=false;
+    let road;
+    addroad.onclick=async ()=>{
+        function rotataroad(e){
+            if (e.code==='KeyR')
+                road.rotateOnWorldAxis(new THREE.Vector3(0,1,0),Math.PI/18);
+            if (e.code==='KeyT')
+                road.rotateOnWorldAxis(new THREE.Vector3(0,1,0),-Math.PI/18);
+        }
+        function putroad(e){
+            e.preventDefault();
+            addroadactive=false;
+            innercornersroadmap.set(road,[
+                                          [road.getChildByName('leftcorner1'), road.getChildByName('rightcorner1')],
+                                          [road.getChildByName('leftcorner2'), road.getChildByName('rightcorner2')]
+                                    ]);
+
+            document.removeEventListener("keydown", rotataroad);
+
+        }
+
+        canvas.addEventListener('mousedown',()=>{
+            canvas.addEventListener('mouseup',putroad,{capture:false});
+            setTimeout(()=>canvas.removeEventListener('mouseup',putroad,{capture:false}), 500);
+
+        },{capture:false});
+
+        if (addroadactive===false) {
+            road = await roaddifinitionclick('./images/fullcorneredroad.glb');
+            //scene.add(road);
+            addroadactive=true;
+            setTimeout(function adrod(){
+                let raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera( mouse, camera );
+                var intersects = raycaster.intersectObject( volcanoobj3d, true);
+
+                if ( intersects.length > 0 ) {
+                    let p=intersects[0].point;
+
+                   let nearcorns=[];
+
+                    for(let masinncorns of innercornersroadmap.values()){
+
+                        masinncorns.forEach((mascouplecorns, index)=>{
+                            mascouplecorns.forEach((value, index)=>{
+                                if (p.distanceTo(value.getWorldPosition())<Math.min(road.width, road.length)){//коэффициент для того чтобы найти ряждом какие чужие углы
+                                   nearcorns.push(mascouplecorns);
+                            }});
+                        });
+                    }
+                    if(nearcorns.length===1){
+                        road.positionbytwocorners(nearcorns[0][0].getWorldPosition(),nearcorns[0][1].getWorldPosition(),p);
+
+
+                    }
+                    else {
+                        road.position.set(p.x, p.y, p.z);
+                    }
+
+
+
+
+                    document.addEventListener("keydown", rotataroad);
+
+
+
+                   // traingonormalization(road);
+                }
+                if(addroadactive)
+                setTimeout(()=>adrod(),100);
+            },100);
+        }
+        else {
+            addroadactive=false;
+            road.cornersystem.material.dispose();
+            road.cornersystem.geometry.dispose();
+            scene.remove(road.cornersystem);
+            road.children.forEach((value,index)=>{//идти с конца переписать, а то плохо глючит
+                road.remove(value);
+                value.material.dispose();
+                value.geometry.dispose()
+            });
+            scene.remove(road);
+            canvas.removeEventListener('mouseup',putroad,{capture:false});
+            document.removeEventListener("keydown", rotataroad);
+
+        }
+
+
+    };
 
 </script>
-<script>//скрипт часов
+<script type="module">//скрипт часов
+    import {clock, traingo} from "./GameScript.js";
+
     let clockelem=document.getElementById('clock');
-    let servertimestamp=0;//получить с сервера
+
     let formatter = new Intl.DateTimeFormat("ru", {
         year: "numeric",
         month: "long",
@@ -100,10 +219,11 @@
         hour:'numeric',
         minute:'numeric'
     });
-    let clock=new Date(servertimestamp);
+
     setTimeout(function clockgo() {
         clock.setTime(clock.getTime()+3600*1000);
         clockelem.innerHTML=(formatter.format(clock));
+        traingo();
         setTimeout(clockgo, 1000);
     },1000);
 
@@ -115,34 +235,7 @@
     import {OBJLoader2} from './js/three.js-master/examples/jsm/loaders/OBJLoader2.js';
     import {Vector3} from "./js/three.js-master/src/math/Vector3.js";
     import {Plane} from "./js/three.js-master/src/math/Plane.js";
-    import {train3dobj,volcanoobj3d,canvas,scene,camera,renderer,controls,light,MTLlod,loader,cubemaploader,objLoader,cubetextture} from"./GameScript.js";
-    import {MTLLoader} from "./js/three.js-master/examples/jsm/loaders/MTLLoader.js";
-    import {MtlObjBridge} from "./js/three.js-master/examples/jsm/loaders/obj2/bridge/MtlObjBridge.js";
-    import {LineMaterial} from "./js/three.js-master/examples/jsm/lines/LineMaterial.js";
-    import {RenderPass} from "./js/three.js-master/examples/jsm/postprocessing/RenderPass.js";
-    import {FilmPass} from "./js/three.js-master/examples/jsm/postprocessing/FilmPass.js";
-    import {EffectComposer} from "./js/three.js-master/examples/jsm/postprocessing/EffectComposer.js";
-    import {FlyControls} from "./js/three.js-master/examples/jsm/controls/FlyControls.js";
-    import {TrackballControls} from "./js/three.js-master/examples/jsm/controls/TrackballControls.js";
-
-    function promisify(f) {
-        return function (...args) { // возвращает функцию-обёртку
-            return new Promise((resolve, reject) => {
-                function callback(err, result) { // наш специальный колбэк для f
-                    if (err) {
-                        return reject(err);
-                    } else {
-                        resolve(result);
-                    }
-                }
-                args.push(callback); // добавляем колбэк в конец аргументов f
-                f.call(this, ...args); // вызываем оригинальную функцию
-            });
-        };
-    };
-
-
-
+    import {traingo,train3dobj,volcanoobj3d,canvas,scene,camera,renderer,controls,light,MTLlod,loader,cubemaploader,cubetextture,roaddifinitionclick} from"./GameScript.js";
     {
          //трекбол не работает когда камера на оси у, флацй надо передавать 12 в апдейт дела
         let curbtns={};
@@ -226,112 +319,16 @@
             controls.update();
         }
     }//контролы и  камера
+    requestAnimationFrame( render );
 
-
-
-
-    function traingonormalization(curtrain) {
-        train3dobj.lookforward();
-        let cors=train3dobj.cornersystem;
-        let intersect;
-        let flag=false;
-        let corners=[cors.getChildByName('corner1'),cors.getChildByName('corner2'),cors.getChildByName('corner3')];
-        let raysup=[];
-        let raysdown=[];
-        let upvector=new Vector3(0,1,0);
-        let downvector=new Vector3(0,-1,0);
-
-       raycastt(upvector,raysup);
-       raycastt(downvector,raysdown);
-       function raycastt(vector, masrays) {
-           scene.updateMatrixWorld();
-           curtrain.updateMatrixWorld();
-           volcanoobj3d.updateMatrixWorld();
-           cors.updateMatrixWorld();
-           for (let i =1;i<4;i++){
-               masrays.push(new THREE.Raycaster(cors.localToWorld((new Vector3()).copy(cors.getChildByName(`corner${i}`).position)), vector.normalize()));//можно фар и нир понизить
-           }
-           masrays.forEach((ray, index)=>{
-               intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
-               if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/50))//
-               {
-                   flag=true;
-                   let curpos=new Vector3();
-                   curpos.copy(corners[index].position);
-                   let curworldposoftrain=new Vector3();
-                   curworldposoftrain.copy(cors.position);
-                   curworldposoftrain.addScaledVector(cors.getChildByName(`corner${index+1}`).position, cors.scale.y);
-
-                   let futureworldpos=new Vector3(curworldposoftrain.x, intersect[0].point.y+100, curworldposoftrain.z);
-                   let futureposlocal=cors.worldToLocal(futureworldpos);
-                   if (cors.getWorldDirection().angleTo(new Vector3(1,0,0))<=Math.PI/2){
-                       futureposlocal.applyAxisAngle(upvector, cors.getWorldDirection().angleTo(new Vector3(0,0,1)) );
-                   }
-                   else {
-                       futureposlocal.applyAxisAngle(downvector, cors.getWorldDirection().angleTo(new Vector3(0,0,1)) );
-                   }
-                   cors.getChildByName(`corner${index+1}`).position.set(futureposlocal.x, futureposlocal.y, futureposlocal.z);//убрать прибавление позиции системы многократное каждый раз
-
-               }
-           });
-       }
-
-        /////////////////////////
-
-
-        if (flag) {
-            corners.sort((a, b) => {
-                let ap=(a.position);
-                let bp=(b.position);            //localtoworld????
-                if (ap.y > bp.y) return 1;
-                if (ap.y < bp.y) return -1;
-                if (ap.y = bp.y) return 0;
-            });
-
-            curtrain.oldaxis=new Vector3();
-            curtrain.oldaxis.copy(curtrain.trainplain.normal);
-            curtrain.trainplain.setFromCoplanarPoints(corners[0].getWorldPosition().divideScalar(cors.scale.y), corners[1].getWorldPosition().divideScalar(cors.scale.y),corners[2].getWorldPosition().divideScalar(cors.scale.y));
-            if(curtrain.trainplain.normal.angleTo(upvector)>=Math.PI/2){
-                curtrain.trainplain.normal.negate();
-            }
-
-            let quaternion2=new THREE.Quaternion();
-            quaternion2.setFromUnitVectors(curtrain.oldaxis.normalize(),curtrain.trainplain.normal.normalize());
-            curtrain.applyQuaternion(quaternion2);
-            curtrain.position.y=corners[2].getWorldPosition().y;
-
-        }
-
-    }//выравнивание паровоза или чего то по вертикали чтобы не проваливалось
-    setTimeout(()=>requestAnimationFrame( render ),3000);//добавить после
     function render(time) {
         time *= 0.0001;
-
-        train3dobj.position.x=190000*Math.cos(time);
-        train3dobj.position.z=190000*Math.sin(time);
-        train3dobj.forwarddirrect=new Vector3(190000*Math.cos(time+1.5),0,190000*Math.sin(time+1.5))
-
-     /*   train3dobj.position.x+=100;
-        train3dobj.forwarddirrect=new Vector3(1,0,0);*/
-
-      train3dobj.updateMatrix();
-      train3dobj.updateMatrixWorld();
-
-        traingonormalization(train3dobj);
-
         resizerenderertotal(renderer, camera);
         controls.update();
         renderer.render( scene, camera );
-
         requestAnimationFrame( render);
     }
 </script>
-<script>
-    const mainscript=document.getElementById('mainscenescript');
-    async function loadfunc(){
-         
-    }
-    mainscript.onload=loadfunc();
-</script>
+
 </body>
 </html>
