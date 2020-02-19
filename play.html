@@ -114,10 +114,14 @@
     }
     exitrotesbtn.onclick=(event)=>routeswindow.style.visibility='hidden';
     ////////////////////////////////////////////////////////////
+/*
     let innercornersroadmap=new Map;
+*/
+    let allroadonmap=[];
     let addroadactive=false;
     let road;
     addroad.onclick=async ()=>{
+        let cancelsdvig=false;
         function rotataroad(e){
             if (e.code==='KeyR')
                 road.rotateOnWorldAxis(new THREE.Vector3(0,1,0),Math.PI/18);
@@ -127,11 +131,12 @@
         function putroad(e){
             e.preventDefault();
             addroadactive=false;
-            innercornersroadmap.set(road,[
+            /*innercornersroadmap.set(road,[
                                           [road.getChildByName('leftcorner1'), road.getChildByName('rightcorner1')],
                                           [road.getChildByName('leftcorner2'), road.getChildByName('rightcorner2')]
-                                    ]);
-
+                                    ]);*/
+            cancelsdvig=true;
+            allroadonmap.push(road);
             document.removeEventListener("keydown", rotataroad);
 
         }
@@ -154,32 +159,26 @@
                 if ( intersects.length > 0 ) {
                     let p=intersects[0].point;
 
-                   let nearcorns=[];
-
-                    for(let masinncorns of innercornersroadmap.values()){
-
-                        masinncorns.forEach((mascouplecorns, index)=>{
-                            mascouplecorns.forEach((value, index)=>{
-                                let dist=p.distanceTo(value.getWorldPosition());
-                                if (dist<Math.max(road.width, road.length)){//коэффициент для того чтобы найти ряждом какие чужие углы
-                                   nearcorns.push({mascouplecorns,dist});
-                            }});
-                        });
+                   let nearroads=[];
+                    for(let currod of allroadonmap){
+                                let dist=p.distanceTo(currod.getWorldPosition());
+                                if (dist<Math.max(road.width, road.length)) {//коэффициент для того чтобы найти ряждом какие чужие углы
+                                    nearroads.push({currod, dist});
+                                }
                     }
-                    nearcorns.sort((a,b)=>{
+                        nearroads.sort((a,b)=>{
                         if (a.dist > b.dist) return 1;
                         if (a.dist < b.dist) return -1;
                         if (a.dist = b.dist) return 0;
                     });
-                    if(nearcorns.length>0){
-                        road.positionbytwocorners(nearcorns[0].mascouplecorns[0].getWorldPosition(),nearcorns[0].mascouplecorns[1].getWorldPosition(),p);
-
-
+                    if(cancelsdvig===false){
+                    if(nearroads.length>0){
+                        road.positionbytwocorners(nearroads[0].currod,p);
                     }
                     else {
                         road.position.set(p.x, p.y, p.z);
                     }
-
+                        }
 
 
 
