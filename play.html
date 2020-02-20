@@ -127,6 +127,9 @@
                 road.rotateOnWorldAxis(new THREE.Vector3(0,1,0),Math.PI/18);
             if (e.code==='KeyT')
                 road.rotateOnWorldAxis(new THREE.Vector3(0,1,0),-Math.PI/18);
+           /* let leftcorn1=road.getChildByName('leftcorner1');
+            let leftcorn2=road.getChildByName('leftcorner2');
+            let axis=new THREE.Vector3()*/
         }
         function putroad(e){
             e.preventDefault();
@@ -194,9 +197,6 @@
         }
         else {
             addroadactive=false;
-            road.cornersystem.material.dispose();
-            road.cornersystem.geometry.dispose();
-            scene.remove(road.cornersystem);
             road.children.forEach((value,index)=>{//идти с конца переписать, а то плохо глючит
                 road.remove(value);
                 value.material.dispose();
