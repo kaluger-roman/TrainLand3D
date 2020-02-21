@@ -44,7 +44,7 @@
     </div>
 </div>
 <script type="module">
-    import {roaddifinitionclick,camera,volcanoobj3d, traingonormalization,scene,canvas} from "./GameScript.js";
+    import {roaddifinitionclick,camera,volcanoobj3d, traingonormalization,scene,canvas,renderer} from "./GameScript.js";
     import * as THREE from './js/three.js-master/build/three.module.js';
 
     var mouse = new THREE.Vector2();
@@ -120,35 +120,80 @@
     let allroadonmap=[];
     let addroadactive=false;
     let road;
+    let axisforuser=new THREE.Vector3(0,1,0),angleforuser=0;
+    let accesstoput=true;
+    let cancelsdvig;
+    function putroad(e){
+        e.preventDefault();
+        if (accesstoput===false){
+            mainflex.insertAdjacentHTML("beforeend",
+                  `<div id="alertt" style="position: relative;display: flex; justify-content: center; grid-column-start: 3; grid-column-end: 4; grid-row-start: 2; grid-row-end: 3;z-index: 1000">
+                        <img style="width: 5vmax; height: 5vmax" src="./images/alert.png">
+                         <img style="width: 40vmax; height: 10vmax" src="./images/image(9).png">
+                   </div>
+
+                  `
+            );
+
+            setTimeout(()=>{let alertt=document.getElementById('alertt'); alertt.remove()}, 3000);
+            return;
+        }
+        console.log('сработав');
+        if(road.newOrigin!==undefined) {
+
+            let oldpos=road.children[0].getWorldPosition();
+            road.children.forEach((value) => value.translateOnAxis((new THREE.Vector3()).copy(road.newOrigin).normalize(), road.newOrigin.length()));
+            let newpos=road.children[0].getWorldPosition();
+            let sdvig=new THREE.Vector3();
+            sdvig.subVectors(oldpos,newpos);
+            road.position.x+=sdvig.x;
+            road.position.y+=sdvig.y;
+            road.position.z+=sdvig.z;
+
+        }
+        addroadactive=false;
+
+        cancelsdvig=true;
+        allroadonmap.push(road);
+        // canvas.removeEventListener('mouseup',putroad,{capture:false});
+        document.removeEventListener("keydown", rotataroad);
+
+    }
+    function rotataroad(e){
+        if (e.code==='Numpad4')
+            road.rotateOnWorldAxis(new THREE.Vector3(0,1,0),Math.PI/36);
+        if (e.code==='Numpad6')
+            road.rotateOnWorldAxis(new THREE.Vector3(0,1,0),-Math.PI/36);
+        let leftcorn1=road.getChildByName('leftcorner1');
+        let rightcorner1=road.getChildByName('rightcorner1');
+        let axis=new THREE.Vector3();
+        axis.subVectors(leftcorn1.getWorldPosition(),rightcorner1.getWorldPosition());
+        axisforuser=axis;
+        if (e.code==='Numpad8'){
+            road.rotateOnWorldAxis(axis.normalize(),Math.PI/36);
+            angleforuser+= Math.PI/36;
+        }
+        if (e.code==='Numpad2') {
+            road.rotateOnWorldAxis(axis.normalize(), -Math.PI / 36);
+            angleforuser -= Math.PI / 36;
+        }
+    }
+    function f1(){
+        canvas.addEventListener('mouseup',putroad,{capture:false});
+        setTimeout(()=>{
+            canvas.removeEventListener('mouseup',putroad,{capture:false});
+        }, 500);
+    }
     addroad.onclick=async ()=>{
-        let cancelsdvig=false;
-        function rotataroad(e){
-            if (e.code==='KeyR')
-                road.rotateOnWorldAxis(new THREE.Vector3(0,1,0),Math.PI/18);
-            if (e.code==='KeyT')
-                road.rotateOnWorldAxis(new THREE.Vector3(0,1,0),-Math.PI/18);
-           /* let leftcorn1=road.getChildByName('leftcorner1');
-            let leftcorn2=road.getChildByName('leftcorner2');
-            let axis=new THREE.Vector3()*/
-        }
-        function putroad(e){
-            e.preventDefault();
-            addroadactive=false;
-            /*innercornersroadmap.set(road,[
-                                          [road.getChildByName('leftcorner1'), road.getChildByName('rightcorner1')],
-                                          [road.getChildByName('leftcorner2'), road.getChildByName('rightcorner2')]
-                                    ]);*/
-            cancelsdvig=true;
-            allroadonmap.push(road);
-            document.removeEventListener("keydown", rotataroad);
+        canvas.removeEventListener('mousedown',f1,{capture:false});
+        cancelsdvig=false;
 
-        }
 
-        canvas.addEventListener('mousedown',()=>{
-            canvas.addEventListener('mouseup',putroad,{capture:false});
-            setTimeout(()=>canvas.removeEventListener('mouseup',putroad,{capture:false}), 500);
 
-        },{capture:false});
+
+        canvas.addEventListener('mousedown',f1,{capture:false});
+
+
 
         if (addroadactive===false) {
             road = await roaddifinitionclick('./images/fullcorneredroad.glb');
@@ -176,10 +221,11 @@
                     });
                     if(cancelsdvig===false){
                     if(nearroads.length>0){
-                        road.positionbytwocorners(nearroads[0].currod,p);
+                        accesstoput=road.positionbytwocorners(nearroads[0].currod,p,axisforuser,angleforuser);
                     }
                     else {
-                        road.position.set(p.x, p.y, p.z);
+                        road.position.set(p.x, p.y+road.width/5, p.z);
+                        road.angleforuser=angleforuser;
                     }
                         }
 

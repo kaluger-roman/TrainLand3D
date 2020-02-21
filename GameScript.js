@@ -265,7 +265,16 @@ export async function roaddifinitionclick(objectpath)
         scene.add(road3dobj);
 
 
-        road3dobj.positionbytwocorners=function(currod,pointofmouse){//
+        road3dobj.positionbytwocorners=function(currod,pointofmouse,axisforuser,angleforuser){//
+
+            if(road3dobj.newOrigin!==undefined) {
+                road3dobj.position.x-=road3dobj.sdvig.x;
+                road3dobj.position.y-=road3dobj.sdvig.y;
+                road3dobj.position.z-=road3dobj.sdvig.z;
+                road3dobj.children.forEach((value) => value.translateOnAxis((new Vector3()).copy(road3dobj.newOrigin).normalize(), road3dobj.newOrigin.length()));
+
+            }
+
             let leftcorn1=road3dobj.getChildByName('leftcorner1');
             let leftcorn2=road3dobj.getChildByName('leftcorner2');
             let rightcorn1=road3dobj.getChildByName('rightcorner1');
@@ -274,37 +283,63 @@ export async function roaddifinitionclick(objectpath)
             let currodleftcorn1=currod.getChildByName('leftcorner1');
             let currodleftcorn2=currod.getChildByName('leftcorner2');
 
+            road3dobj.angleforuser=angleforuser;
 
             let needquaternion=currod.getWorldQuaternion();
             road3dobj.setRotationFromQuaternion(needquaternion);
 
             road3dobj.updateMatrixWorld();
+            renderer.render(scene,camera);
             let firstvectto=new THREE.Vector3();
             firstvectto.subVectors(currodleftcorn1.getWorldPosition(),currodleftcorn2.getWorldPosition());
 
             let res=currod.getWorldPosition();
             road3dobj.position.set(res.x,res.y, res.z);
             road3dobj.updateMatrixWorld();  //вот эта мелккая сука все портила, надо обновлять положения углов внутри так, чьобы тут жеих получить
-
+            renderer.render(scene,camera);
             let dist=pointofmouse.distanceTo(road3dobj.position);
 
             let r3p=road3dobj.position;
             road3dobj.position.set(r3p.x+firstvectto.x,r3p.y+firstvectto.y,r3p.z+firstvectto.z);
-
+            renderer.render(scene,camera);
             if(dist<pointofmouse.distanceTo(road3dobj.position)){
                 road3dobj.position.set(r3p.x-2*firstvectto.x,r3p.y-2*firstvectto.y,r3p.z-2*firstvectto.z);
             }
             road3dobj.updateMatrixWorld();
-            let distantcorenerleft,distantcornerright, nearcornerleft;
+            let nearcornerleft,nearcornerright,neworigin=new THREE.Vector3();
+            if(currod.position.distanceTo(leftcorn1.getWorldPosition())>currod.position.distanceTo(leftcorn2.getWorldPosition())){
+
+                nearcornerleft=leftcorn2;
+                nearcornerright=rightcorn2;
+            }
+            else{
+                nearcornerleft=leftcorn1;
+                nearcornerright=rightcorn1;
+            }
+            neworigin.lerpVectors(nearcornerleft.position,nearcornerright.position,0.5);
+
+            let oldpos=road3dobj.children[0].getWorldPosition();
+            road3dobj.children.forEach((value)=>value.translateOnAxis((new Vector3()).copy(neworigin).normalize().negate(),neworigin.length()));
+            let newpos=road3dobj.children[0].getWorldPosition();
+            let sdvig=new THREE.Vector3();
+            sdvig.subVectors(oldpos,newpos);
+            road3dobj.position.x+=sdvig.x;
+            road3dobj.position.y+=sdvig.y;
+            road3dobj.position.z+=sdvig.z;
+
+            road3dobj.sdvig=sdvig;
+            road3dobj.newOrigin=neworigin;
+            road3dobj.rotateOnWorldAxis(axisforuser.normalize(),angleforuser);
+            road3dobj.updateMatrixWorld();
+
+            let distantcorenerleft,distantcornerright;
                 if(currod.position.distanceTo(leftcorn1.getWorldPosition())>currod.position.distanceTo(leftcorn2.getWorldPosition())){
                     distantcorenerleft=leftcorn1.getWorldPosition();
                     distantcornerright=rightcorn1.getWorldPosition();
-                    nearcornerleft=leftcorn2.getWorldPosition();
                 }
                 else{
                     distantcorenerleft=leftcorn2.getWorldPosition();
                     distantcornerright=rightcorn2.getWorldPosition();
-                    nearcornerleft=leftcorn1.getWorldPosition();
                 }
 
             let raycasterleft = new THREE.Raycaster(distantcorenerleft,new Vector3(0,1,0));
@@ -313,76 +348,19 @@ export async function roaddifinitionclick(objectpath)
             let intersectleft = raycasterleft.intersectObject( volcanoobj3d, true);
             let intersectright = raycasterright.intersectObject( volcanoobj3d, true);
 
+            if((intersectleft.length>0)||(intersectright.length>0))
+                return false;
 
-            let fiangle;
-            if((intersectleft.length>0)||(intersectright.length>0)) {
-                let maxdistance;
-                if(intersectleft.length===0){
-                    maxdistance=intersectright[0].distance;
-                }
-                    else if(intersectright.length===0){
-                    maxdistance=intersectleft[0].distance;
-                }
-                    else {
-                    maxdistance =Math.max(intersectleft[0].distance, intersectright[0].distance);
-                }
-                road3dobj.updateMatrixWorld();
-                    fiangle= Math.atan(2 * maxdistance / road3dobj.length);
-                road3dobj.rotateOnWorldAxis((new THREE.Vector3()).subVectors(leftcorn1.getWorldPosition(),rightcorn1.getWorldPosition()).normalize(), fiangle);
-               //road3dobj.position.y=currod.position.y;
-                road3dobj.updateMatrixWorld();
-                renderer.render( scene, camera );
-                if((new THREE.Vector3()).subVectors(distantcorenerleft,nearcornerleft).y>0){
-                    road3dobj.rotateOnWorldAxis((new THREE.Vector3()).subVectors(leftcorn1.getWorldPosition(),rightcorn1.getWorldPosition()).normalize(),-2*fiangle);
-                    renderer.render( scene, camera );
-                }
+            let raycasterleftdown = new THREE.Raycaster(distantcorenerleft,new Vector3(0,-1,0));
+            let raycasterrightdown = new THREE.Raycaster(distantcornerright,new Vector3(0,-1,0));
 
-               road3dobj.position.y+=road3dobj.length/2*Math.sin(fiangle);
-                let axistotranslate=new THREE.Vector3();
-                axistotranslate.subVectors(currod.getWorldPosition(),road3dobj.getWorldPosition());
-                axistotranslate.y=0;
-                road3dobj.translateOnAxis(road3dobj.worldToLocal(axistotranslate).normalize().negate(),road3dobj.length/2*(1-Math.cos(fiangle)));
+            let intersectleftdown = raycasterleftdown.intersectObject( volcanoobj3d, true);
+            let intersectrightdown = raycasterrightdown.intersectObject( volcanoobj3d, true);
 
-            }
-            else{
-                let raycasterleft = new THREE.Raycaster(distantcorenerleft,new Vector3(0,-1,0));
-                let raycasterright = new THREE.Raycaster(distantcornerright,new Vector3(0,-1,0));
+            if((intersectleftdown.distance>road3dobj.length)||(intersectrightdown.distance>road3dobj.length))
+                return false;
+            return true;
 
-                let intersectleft = raycasterleft.intersectObject( volcanoobj3d, true);
-                let intersectright = raycasterright.intersectObject( volcanoobj3d, true);
-
-
-                let fiangle;
-                if((intersectleft.length>0)||(intersectright.length>0)) {
-                    let maxdistance;
-                    if(intersectleft.length===0){
-                        maxdistance=intersectright[0].distance;
-                    }
-                    else if(intersectright.length===0){
-                        maxdistance=intersectleft[0].distance;
-                    }
-                    else {
-                        maxdistance =Math.min(intersectleft[0].distance, intersectright[0].distance);
-                    }
-                    road3dobj.updateMatrixWorld();
-                    fiangle= Math.atan(2 * maxdistance / road3dobj.length);
-                    road3dobj.rotateOnWorldAxis((new THREE.Vector3()).subVectors(leftcorn1.getWorldPosition(),rightcorn1.getWorldPosition()).normalize(), fiangle);
-                    //road3dobj.position.y=currod.position.y;
-                    road3dobj.updateMatrixWorld();
-                    renderer.render( scene, camera );
-                    if((new THREE.Vector3()).subVectors(distantcorenerleft,nearcornerleft).y<0){
-                        road3dobj.rotateOnWorldAxis((new THREE.Vector3()).subVectors(leftcorn1.getWorldPosition(),rightcorn1.getWorldPosition()).normalize(),-2*fiangle);
-                        renderer.render( scene, camera );
-                    }
-
-                    road3dobj.position.y-=road3dobj.length/2*Math.sin(fiangle);
-                    let axistotranslate=new THREE.Vector3();
-                    axistotranslate.subVectors(currod.getWorldPosition(),road3dobj.getWorldPosition());
-                    axistotranslate.y=0;
-                    road3dobj.translateOnAxis(road3dobj.worldToLocal(axistotranslate).normalize(),road3dobj.length/2*(1-Math.cos(fiangle)));
-
-                }
-            }
 
         };
 
