@@ -280,7 +280,7 @@ export async function roaddifinitionclick(objectpath)
             let rightcorn1=road3dobj.getChildByName('rightcorner1');
             let rightcorn2=road3dobj.getChildByName('rightcorner2');
 
-            let currodleftcorn1=currod.getChildByName('leftcorner1');
+            let currodleftcorn1=currod.getChildByName('leftcorner1');   //для угловых сегментов доделать взять два фиксированных угла на сегменте, которые будут липнуть к нашим, это надо чтобы не было поворота влево вправо при смене угла вращения, углы должны быть одни и те же которые лепим дороге, просто разворачивать как слдует, еще выделить у нужного конца центр двигать которые будем, прям к границе центр приделать чтобы легче позиционировать, тупо на угол дороги на карте ставим наш центр при нужном повороте оси
             let currodleftcorn2=currod.getChildByName('leftcorner2');
 
             road3dobj.angleforuser=angleforuser;
@@ -289,26 +289,23 @@ export async function roaddifinitionclick(objectpath)
             road3dobj.setRotationFromQuaternion(needquaternion);
 
             road3dobj.updateMatrixWorld();
-            renderer.render(scene,camera);
+
             let firstvectto=new THREE.Vector3();
             firstvectto.subVectors(currodleftcorn1.getWorldPosition(),currodleftcorn2.getWorldPosition());
 
             let res=currod.getWorldPosition();
             road3dobj.position.set(res.x,res.y, res.z);
             road3dobj.updateMatrixWorld();  //вот эта мелккая сука все портила, надо обновлять положения углов внутри так, чьобы тут жеих получить
-            renderer.render(scene,camera);
             let dist=pointofmouse.distanceTo(road3dobj.position);
 
             let r3p=road3dobj.position;
             road3dobj.position.set(r3p.x+firstvectto.x,r3p.y+firstvectto.y,r3p.z+firstvectto.z);
-            renderer.render(scene,camera);
             if(dist<pointofmouse.distanceTo(road3dobj.position)){
                 road3dobj.position.set(r3p.x-2*firstvectto.x,r3p.y-2*firstvectto.y,r3p.z-2*firstvectto.z);
             }
             road3dobj.updateMatrixWorld();
             let nearcornerleft,nearcornerright,neworigin=new THREE.Vector3();
             if(currod.position.distanceTo(leftcorn1.getWorldPosition())>currod.position.distanceTo(leftcorn2.getWorldPosition())){
-
                 nearcornerleft=leftcorn2;
                 nearcornerright=rightcorn2;
             }
@@ -357,8 +354,9 @@ export async function roaddifinitionclick(objectpath)
             let intersectleftdown = raycasterleftdown.intersectObject( volcanoobj3d, true);
             let intersectrightdown = raycasterrightdown.intersectObject( volcanoobj3d, true);
 
-            if((intersectleftdown.distance>road3dobj.length)||(intersectrightdown.distance>road3dobj.length))
+            if((intersectleftdown[0].distance>road3dobj.length)||(intersectrightdown[0].distance>road3dobj.length))
                 return false;
+
             return true;
 
 
@@ -426,7 +424,7 @@ export function traingonormalization(curtrain) {
             let bp=(b.position);            //localtoworld????
             if (ap.y > bp.y) return 1;
             if (ap.y < bp.y) return -1;
-            if (ap.y = bp.y) return 0;
+            if (ap.y === bp.y) return 0;
         });
 
         curtrain.oldaxis=new Vector3();

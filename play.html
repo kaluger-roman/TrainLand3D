@@ -47,16 +47,13 @@
     import {roaddifinitionclick,camera,volcanoobj3d, traingonormalization,scene,canvas,renderer} from "./GameScript.js";
     import * as THREE from './js/three.js-master/build/three.module.js';
 
-    var mouse = new THREE.Vector2();
+    let mouse = new THREE.Vector2();
     function onDocumentMouseMove( event ) {
         event.preventDefault();
-        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-        mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        mouse.x = ( event.clientX / document.body.clientWidth ) * 2 - 1;
+        mouse.y = - ( event.clientY / document.body.clientHeight ) * 2 + 1;
     }
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-
-
-
 
     let arrowlp=document.getElementById('arrowlp');
     let innerleftpanel=document.getElementById('innerleftpanel');
@@ -70,6 +67,7 @@
 
     let conterl=0;
     let conterd=0;
+
     arrowlp.onclick=(event)=>{
         conterl+=1;
         event.stopPropagation();
@@ -78,7 +76,6 @@
             arrowlp.classList.add('rotatearrowclass');
             innerleftpanel.classList.remove('openpanell');
             innerleftpanel.classList.add('hidepanell');
-
         }
         else {
             arrowlp.classList.remove('rotatearrowclass');
@@ -95,7 +92,6 @@
             arrowdp.classList.add('rotatearrowclass');
             mainpanel.classList.remove('openpaneld');
             mainpanel.classList.add('hidepaneld');
-
         }
         else {
             arrowdp.classList.remove('rotatearrowclass');
@@ -104,19 +100,17 @@
             mainpanel.classList.add('openpaneld');
         }
     };
-    citiesbtn.onclick=(event)=>{
-       if (routeswindow.style.visibility=='hidden'){
+    citiesbtn.onclick=()=>{
+       if (routeswindow.style.visibility==='hidden'){
            routeswindow.style.visibility='visible';
        }
        else {
            routeswindow.style.visibility='hidden';
        }
-    }
-    exitrotesbtn.onclick=(event)=>routeswindow.style.visibility='hidden';
+    };
+    exitrotesbtn.onclick=()=>routeswindow.style.visibility='hidden';
     ////////////////////////////////////////////////////////////
-/*
-    let innercornersroadmap=new Map;
-*/
+
     let allroadonmap=[];
     let addroadactive=false;
     let road;
@@ -134,13 +128,10 @@
 
                   `
             );
-
             setTimeout(()=>{let alertt=document.getElementById('alertt'); alertt.remove()}, 3000);
             return;
         }
-        console.log('сработав');
         if(road.newOrigin!==undefined) {
-
             let oldpos=road.children[0].getWorldPosition();
             road.children.forEach((value) => value.translateOnAxis((new THREE.Vector3()).copy(road.newOrigin).normalize(), road.newOrigin.length()));
             let newpos=road.children[0].getWorldPosition();
@@ -149,15 +140,11 @@
             road.position.x+=sdvig.x;
             road.position.y+=sdvig.y;
             road.position.z+=sdvig.z;
-
         }
         addroadactive=false;
-
         cancelsdvig=true;
         allroadonmap.push(road);
-        // canvas.removeEventListener('mouseup',putroad,{capture:false});
         document.removeEventListener("keydown", rotataroad);
-
     }
     function rotataroad(e){
         if (e.code==='Numpad4')
@@ -187,26 +174,16 @@
     addroad.onclick=async ()=>{
         canvas.removeEventListener('mousedown',f1,{capture:false});
         cancelsdvig=false;
-
-
-
-
         canvas.addEventListener('mousedown',f1,{capture:false});
-
-
-
         if (addroadactive===false) {
             road = await roaddifinitionclick('./images/fullcorneredroad.glb');
-            //scene.add(road);
             addroadactive=true;
             setTimeout(function adrod(){
                 let raycaster = new THREE.Raycaster();
                 raycaster.setFromCamera( mouse, camera );
-                var intersects = raycaster.intersectObject( volcanoobj3d, true);
-
+                let intersects = raycaster.intersectObjects( [].concat(volcanoobj3d,allroadonmap), true);
                 if ( intersects.length > 0 ) {
                     let p=intersects[0].point;
-
                    let nearroads=[];
                     for(let currod of allroadonmap){
                                 let dist=p.distanceTo(currod.getWorldPosition());
@@ -217,7 +194,7 @@
                         nearroads.sort((a,b)=>{
                         if (a.dist > b.dist) return 1;
                         if (a.dist < b.dist) return -1;
-                        if (a.dist = b.dist) return 0;
+                        if (a.dist === b.dist) return 0;
                     });
                     if(cancelsdvig===false){
                     if(nearroads.length>0){
@@ -228,14 +205,7 @@
                         road.angleforuser=angleforuser;
                     }
                         }
-
-
-
                     document.addEventListener("keydown", rotataroad);
-
-
-
-                   // traingonormalization(road);
                 }
                 if(addroadactive)
                 setTimeout(()=>adrod(),100);
@@ -243,18 +213,15 @@
         }
         else {
             addroadactive=false;
-            road.children.forEach((value,index)=>{//идти с конца переписать, а то плохо глючит
-                road.remove(value);
-                value.material.dispose();
-                value.geometry.dispose()
-            });
+            for (let i=road.children.length-1;i>=0;i--){
+                road.children[i].material.dispose();
+                road.children[i].geometry.dispose();
+                road.remove( road.children[i]);
+            }
             scene.remove(road);
             canvas.removeEventListener('mouseup',putroad,{capture:false});
             document.removeEventListener("keydown", rotataroad);
-
         }
-
-
     };
 
 </script>
@@ -372,8 +339,7 @@
     }//контролы и  камера
     requestAnimationFrame( render );
 
-    function render(time) {
-        time *= 0.0001;
+    function render() {
         resizerenderertotal(renderer, camera);
         controls.update();
         renderer.render( scene, camera );

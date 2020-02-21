@@ -30,6 +30,7 @@
 }
 #exitroutwindowbtn{
     position: absolute;
+    z-index: 10;
     width: 4%;
     height: 7%;
     left: 96%;
