@@ -176,7 +176,7 @@ export async function traindifinition(objectpath)
         cornersystem.attach(corner3);
 
         train3dobj.trainplain=new Plane();
-        train3dobj.trainplain.setFromCoplanarPoints(cornersystem.getChildByName('corner1').getWorldPosition(),cornersystem.getChildByName('corner2').getWorldPosition(),cornersystem.getChildByName('corner3').getWorldPosition());//или position
+        train3dobj.trainplain.setFromCoplanarPoints(cornersystem.getObjectByName('corner1').getWorldPosition(),cornersystem.getObjectByName('corner2').getWorldPosition(),cornersystem.getObjectByName('corner3').getWorldPosition());//или position
 
         train3dobj.forwarddirrect =  new Vector3(1, 0, 0);
         // в какую сторону направлен нос с учетом поворота поверхности
@@ -214,9 +214,9 @@ export async function traindifinition(objectpath)
         };
 
         {
-            let helper2 = new THREE.AxisHelper(50000000);
-            let helper3 = new THREE.AxisHelper(50000000);
-            let helper4 = new THREE.AxisHelper(50000000);
+            let helper2 = new THREE.AxesHelper(50000000);
+            let helper3 = new THREE.AxesHelper(50000000);
+            let helper4 = new THREE.AxesHelper(50000000);
             cornersystem.add(helper4);
             train3dobj.add(helper2);
             scene.add(train3dobj, helper3);//потом удалить помощников
@@ -264,8 +264,7 @@ export async function roaddifinitionclick(objectpath)
 
         scene.add(road3dobj);
 
-
-        road3dobj.positionbytwocorners=function(currod,pointofmouse,axisforuser,angleforuser){//
+        road3dobj.positionbytwocorners=function(currod,pointofmouse,axisforuser,angleforuser,allroadonmap){//
 
             if(road3dobj.newOrigin!==undefined) {
                 road3dobj.position.x-=road3dobj.sdvig.x;
@@ -275,13 +274,13 @@ export async function roaddifinitionclick(objectpath)
 
             }
 
-            let leftcorn1=road3dobj.getChildByName('leftcorner1');
-            let leftcorn2=road3dobj.getChildByName('leftcorner2');
-            let rightcorn1=road3dobj.getChildByName('rightcorner1');
-            let rightcorn2=road3dobj.getChildByName('rightcorner2');
+            let leftcorn1=road3dobj.getObjectByName('leftcorner1');
+            let leftcorn2=road3dobj.getObjectByName('leftcorner2');
+            let rightcorn1=road3dobj.getObjectByName('rightcorner1');
+            let rightcorn2=road3dobj.getObjectByName('rightcorner2');
 
-            let currodleftcorn1=currod.getChildByName('leftcorner1');   //для угловых сегментов доделать взять два фиксированных угла на сегменте, которые будут липнуть к нашим, это надо чтобы не было поворота влево вправо при смене угла вращения, углы должны быть одни и те же которые лепим дороге, просто разворачивать как слдует, еще выделить у нужного конца центр двигать которые будем, прям к границе центр приделать чтобы легче позиционировать, тупо на угол дороги на карте ставим наш центр при нужном повороте оси
-            let currodleftcorn2=currod.getChildByName('leftcorner2');
+            let currodleftcorn1=currod.getObjectByName('leftcorner1');   //для угловых сегментов доделать взять два фиксированных угла на сегменте, которые будут липнуть к нашим, это надо чтобы не было поворота влево вправо при смене угла вращения, углы должны быть одни и те же которые лепим дороге, просто разворачивать как слдует, еще выделить у нужного конца центр двигать которые будем, прям к границе центр приделать чтобы легче позиционировать, тупо на угол дороги на карте ставим наш центр при нужном повороте оси
+            let currodleftcorn2=currod.getObjectByName('leftcorner2');
 
             road3dobj.angleforuser=angleforuser;
 
@@ -352,9 +351,24 @@ export async function roaddifinitionclick(objectpath)
             let raycasterrightdown = new THREE.Raycaster(distantcornerright,new Vector3(0,-1,0));
 
             let intersectleftdown = raycasterleftdown.intersectObject( volcanoobj3d, true);
-            let intersectrightdown = raycasterrightdown.intersectObject( volcanoobj3d, true);
+            let intersectrightdown = raycasterrightdown.intersectObject( volcanoobj3d, true);//[].concat(volcanoobj3d,allroadonmap)
 
             if((intersectleftdown[0].distance>road3dobj.length)||(intersectrightdown[0].distance>road3dobj.length))
+                return false;
+
+            intersectleft = raycasterleft .intersectObject( allroadonmap, true);
+            intersectright =raycasterright.intersectObject( allroadonmap, true);
+            if(((intersectleft[0].distance<road3dobj.height*2))||
+                ((intersectright[0].distance<road3dobj.height*2)))
+                return false;
+
+            intersectleftdown = raycasterleftdown.intersectObject( allroadonmap, true);
+            intersectrightdown = raycasterrightdown.intersectObject( allroadonmap, true);
+            if(((intersectleftdown[0].distance<road3dobj.height*2))||
+                ((intersectrightdown[0].distance<road3dobj.height*2)))
+                return false;
+
+            if (Math.abs(road3dobj.angleforuser)>Math.PI/4)
                 return false;
 
             return true;
@@ -367,13 +381,30 @@ export async function roaddifinitionclick(objectpath)
     });});
     return new Promise((resolve => resolve(road3dobj)));
 }//дорога
-
+export function disigncontrolroadpoints(road3dobj,curroadroute) {//присоединяемый фрагмент дороги и текущий маршрут(массив точек) присоединения параметры
+    let controlpoints=[];
+    road3dobj.children.forEach((value)=>{
+        if(value.name.startsWith('controlroadpoint')){
+            controlpoints.push(value);
+        }
+    });
+    controlpoints.sort((a,b)=>{
+        if (a.name > b.name) return 1;
+        if (a.name < b.name) return -1;
+        if (a.name === b.name) return 0;
+    });
+    if (curroadroute.pop().distanceTo(controlpoints.pop().position)<curroadroute.pop().distanceTo(controlpoints.shift().position)){
+        controlpoints.reverse();
+    }
+    let curve = new THREE.CatmullRomCurve3( controlpoints.map(((value) => value.position)));
+    curroadroute.push(...curve.getSpacedPoints(40));//количество точек может варьироваться, просмотреть этот момент
+}
 export function traingonormalization(curtrain) {
     curtrain.lookforward();
     let cors=curtrain.cornersystem;
     let intersect;
     let flag=false;
-    let corners=[cors.getChildByName('corner1'),cors.getChildByName('corner2'),cors.getChildByName('corner3')];
+    let corners=[cors.getObjectByName('corner1'),cors.getObjectByName('corner2'),cors.getObjectByName('corner3')];
     let raysup=[];
     let raysdown=[];
     let upvector=new Vector3(0,1,0);
@@ -388,7 +419,7 @@ export function traingonormalization(curtrain) {
         volcanoobj3d.updateMatrixWorld();
         cors.updateMatrixWorld();
         for (let i =1;i<4;i++){
-            masrays.push(new THREE.Raycaster(cors.localToWorld((new Vector3()).copy(cors.getChildByName(`corner${i}`).position)), vector.normalize()));//можно фар и нир понизить
+            masrays.push(new THREE.Raycaster(cors.localToWorld((new Vector3()).copy(cors.getObjectByName(`corner${i}`).position)), vector.normalize()));//можно фар и нир понизить
         }
         masrays.forEach((ray, index)=>{
             intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
@@ -399,7 +430,7 @@ export function traingonormalization(curtrain) {
                 curpos.copy(corners[index].position);
                 let curworldposoftrain=new Vector3();
                 curworldposoftrain.copy(cors.position);
-                curworldposoftrain.addScaledVector(cors.getChildByName(`corner${index+1}`).position, cors.scale.y);
+                curworldposoftrain.addScaledVector(cors.getObjectByName(`corner${index+1}`).position, cors.scale.y);
 
                 let futureworldpos=new Vector3(curworldposoftrain.x, intersect[0].point.y+100, curworldposoftrain.z);
                 let futureposlocal=cors.worldToLocal(futureworldpos);
@@ -409,7 +440,7 @@ export function traingonormalization(curtrain) {
                 else {
                     futureposlocal.applyAxisAngle(downvector, cors.getWorldDirection().angleTo(new Vector3(0,0,1)) );
                 }
-                cors.getChildByName(`corner${index+1}`).position.set(futureposlocal.x, futureposlocal.y, futureposlocal.z);//убрать прибавление позиции системы многократное каждый раз
+                cors.getObjectByName(`corner${index+1}`).position.set(futureposlocal.x, futureposlocal.y, futureposlocal.z);//убрать прибавление позиции системы многократное каждый раз
 
             }
         });

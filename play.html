@@ -111,7 +111,7 @@
     exitrotesbtn.onclick=()=>routeswindow.style.visibility='hidden';
     ////////////////////////////////////////////////////////////
 
-    let allroadonmap=[];
+     let allroadonmap=[];
     let addroadactive=false;
     let road;
     let axisforuser=new THREE.Vector3(0,1,0),angleforuser=0;
@@ -176,7 +176,7 @@
         cancelsdvig=false;
         canvas.addEventListener('mousedown',f1,{capture:false});
         if (addroadactive===false) {
-            road = await roaddifinitionclick('./images/fullcorneredroad.glb');
+            road = await roaddifinitionclick('./images/fullcorneredroadwithcontrol.glb');
             addroadactive=true;
             setTimeout(function adrod(){
                 let raycaster = new THREE.Raycaster();
@@ -198,10 +198,11 @@
                     });
                     if(cancelsdvig===false){
                     if(nearroads.length>0){
-                        accesstoput=road.positionbytwocorners(nearroads[0].currod,p,axisforuser,angleforuser);
+                        accesstoput=road.positionbytwocorners(nearroads[0].currod,p,axisforuser,angleforuser,allroadonmap);
                     }
                     else {
                         road.position.set(p.x, p.y+road.width/5, p.z);
+                        accesstoput=true;
                         road.angleforuser=angleforuser;
                     }
                         }
