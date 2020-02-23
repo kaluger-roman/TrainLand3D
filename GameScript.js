@@ -23,6 +23,7 @@ renderer.autoClearColor = false;
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 let controls = new OrbitControls(camera, renderer.domElement);
+controls.enableKeys=false;
 controls.target.set(0, 8000, 0);
 
 const light = new THREE.DirectionalLight(0xFFFFFF, 1);
@@ -62,8 +63,8 @@ class City{
 
 let citymap=new Map();
 
-citymap.set(1,new City(`Kufagrad`, 120000, 120000,1,new Vector3(4000,4000,4000)));
-citymap.set(2,new City(`Vladosburg`, -120000, -120000,2,new Vector3(4000,4000,4000)));
+citymap.set(1,new City(`Kufagrad`, 120000, 120000,1,new Vector3(10000,10000,10000)));
+citymap.set(2,new City(`Vladosburg`, -120000, -120000,2,new Vector3(10000,10000,10000)));
 
 class Road{
     addfragment(v1,v2,v3){
@@ -356,24 +357,35 @@ export async function roaddifinitionclick(objectpath)
             if((intersectleftdown[0].distance>road3dobj.length)||(intersectrightdown[0].distance>road3dobj.length))
                 return false;
 
-            intersectleft = raycasterleft .intersectObject( allroadonmap, true);
-            intersectright =raycasterright.intersectObject( allroadonmap, true);
-            if(((intersectleft[0].distance<road3dobj.height*2))||
-                ((intersectright[0].distance<road3dobj.height*2)))
+            intersectleft = raycasterleft.intersectObjects( allroadonmap, true);
+            intersectright =raycasterright.intersectObjects( allroadonmap, true);
+
+            let _x1,_x2;
+            try {_x1=intersectleft[0].distance;}
+            catch {_x1=undefined;}
+            try {_x2=intersectright[0].distance;}
+            catch {_x2=undefined;}
+
+            if(((_x1<road3dobj.height*2))||((_x2<road3dobj.height*2)))
                 return false;
 
-            intersectleftdown = raycasterleftdown.intersectObject( allroadonmap, true);
-            intersectrightdown = raycasterrightdown.intersectObject( allroadonmap, true);
-            if(((intersectleftdown[0].distance<road3dobj.height*2))||
-                ((intersectrightdown[0].distance<road3dobj.height*2)))
+            intersectleftdown = raycasterleftdown.intersectObjects( allroadonmap, true);
+            intersectrightdown = raycasterrightdown.intersectObjects( allroadonmap, true);
+
+            try {_x1=intersectleftdown[0].distance;}
+            catch {_x1=undefined;}
+            try {_x2=intersectrightdown[0].distance;}
+            catch {_x2=undefined;}
+
+            if(((_x1<road3dobj.height*2))|| ((_x2<road3dobj.height*2)))
                 return false;
 
             if (Math.abs(road3dobj.angleforuser)>Math.PI/4)
                 return false;
 
+
+            road3dobj.routerelative=currod.routerelative;// принадлежность к маршруту к которому присоединяем
             return true;
-
-
         };
 
         resolve(1);
@@ -393,10 +405,19 @@ export function disigncontrolroadpoints(road3dobj,curroadroute) {//присое�
         if (a.name < b.name) return -1;
         if (a.name === b.name) return 0;
     });
-    if (curroadroute.pop().distanceTo(controlpoints.pop().position)<curroadroute.pop().distanceTo(controlpoints.shift().position)){
+    if (curroadroute.length>0){
+    if (curroadroute[curroadroute.length-1].distanceTo(controlpoints[controlpoints.length-1].getWorldPosition())<curroadroute[curroadroute.length-1].distanceTo(controlpoints[0].getWorldPosition())){
         controlpoints.reverse();
     }
-    let curve = new THREE.CatmullRomCurve3( controlpoints.map(((value) => value.position)));
+    }
+    else{
+        let nearestcity=getnearestcity(new THREE.Vector2(road3dobj.position.x, road3dobj.position.z));
+        if (nearestcity.position.distanceTo(new THREE.Vector2(controlpoints[controlpoints.length-1].getWorldPosition().x,controlpoints[controlpoints.length-1].getWorldPosition().z))
+            <nearestcity.position.distanceTo(new THREE.Vector2(controlpoints[0].getWorldPosition().x,controlpoints[0].getWorldPosition().z))){
+            controlpoints.reverse();
+        }
+    }
+    let curve = new THREE.CatmullRomCurve3( controlpoints.map(((value) => value.getWorldPosition())));
     curroadroute.push(...curve.getSpacedPoints(40));//количество точек может варьироваться, просмотреть этот момент
 }
 export function traingonormalization(curtrain) {
@@ -473,7 +494,17 @@ export function traingonormalization(curtrain) {
     }
 
 }//выравнивание паровоза или чего то по вертикали чтобы не проваливалось
-
+export function getnearestcity(pointvect2) {
+    let sortcities=Array.from(citymap.values()).sort(((a, b) => {
+        let ad,bd;
+        ad=a.position.distanceTo(pointvect2);
+        bd=b.position.distanceTo(pointvect2);
+        if (ad > bd) return 1;
+        if (ad < bd) return -1;
+        if (ad === bd) return 0;
+    }));
+    return sortcities[0];
+}
 (async ()=>{
     train3dobj=await traindifinition('./images/Sci_fi_Train.obj');
     train3dobj.position.set(50000,train3dobj.position.y,50000);

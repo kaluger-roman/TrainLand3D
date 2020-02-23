@@ -44,7 +44,7 @@
     </div>
 </div>
 <script type="module">
-    import {roaddifinitionclick,camera,volcanoobj3d, traingonormalization,scene,canvas,renderer} from "./GameScript.js";
+    import {roaddifinitionclick,camera,volcanoobj3d, traingonormalization,scene,canvas,renderer,disigncontrolroadpoints, getnearestcity} from "./GameScript.js";
     import * as THREE from './js/three.js-master/build/three.module.js';
 
     let mouse = new THREE.Vector2();
@@ -111,14 +111,20 @@
     exitrotesbtn.onclick=()=>routeswindow.style.visibility='hidden';
     ////////////////////////////////////////////////////////////
 
-     let allroadonmap=[];
-    let addroadactive=false;
-    let road;
-    let axisforuser=new THREE.Vector3(0,1,0),angleforuser=0;
-    let accesstoput=true;
-    let cancelsdvig;
-    function putroad(e){
+     let allroadonmap=[];//все дороги нак арте
+     let allroutes=new Map();//все маршруты(связанные куски дорог)
+    let allroutespoints=new Map()//маршруты в виде серии точек
+    let addroadactive=false;//если тру, то дорога перестанет липнуть к мышке и встанет на карту
+    let road;//3d obj
+    let axisforuser=new THREE.Vector3(0,1,0),angleforuser=0;//угол поворота дороги
+    let accesstoput=true;//проверка на возможность размещения(пересечения с текстурами и тд)
+    let cancelsdvig,idforallroutes=0;
+    function putroad(e){//ставит дорогу там где она сейчас есть
         e.preventDefault();
+        let nearestcity=getnearestcity(new THREE.Vector2(road.position.x, road.position.z));
+        if((nearestcity.position.distanceTo(new THREE.Vector2(road.position.x,road.position.z))>Math.max(nearestcity.size.x,nearestcity.size.z)*1.5)&&(road.routerelative===undefined)) {//проверка на соседство с городом новой дороги
+            accesstoput = false;
+        }
         if (accesstoput===false){
             mainflex.insertAdjacentHTML("beforeend",
                   `<div id="alertt" style="position: relative;display: flex; justify-content: center; grid-column-start: 3; grid-column-end: 4; grid-row-start: 2; grid-row-end: 3;z-index: 1000">
@@ -144,6 +150,18 @@
         addroadactive=false;
         cancelsdvig=true;
         allroadonmap.push(road);
+        if(road.routerelative===undefined) {
+            let _mas=[];
+            allroutes.set(++idforallroutes, _mas);
+            _mas.push(road);
+            road.routerelative=idforallroutes;
+            allroutespoints.set(idforallroutes,[]);
+            disigncontrolroadpoints(road,allroutespoints.get(road.routerelative));
+        }
+        else{
+            allroutes.get(road.routerelative).push(road);
+            disigncontrolroadpoints(road,allroutespoints.get(road.routerelative));
+        }
         document.removeEventListener("keydown", rotataroad);
     }
     function rotataroad(e){
@@ -164,6 +182,7 @@
             road.rotateOnWorldAxis(axis.normalize(), -Math.PI / 36);
             angleforuser -= Math.PI / 36;
         }
+        angleforuser=angleforuser%(2*Math.PI);
     }
     function f1(){
         canvas.addEventListener('mouseup',putroad,{capture:false});
@@ -202,6 +221,7 @@
                     }
                     else {
                         road.position.set(p.x, p.y+road.width/5, p.z);
+                        road.routerelative=undefined;
                         accesstoput=true;
                         road.angleforuser=angleforuser;
                     }
