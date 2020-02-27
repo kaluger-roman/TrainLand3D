@@ -61,34 +61,20 @@ class City{
     }
 }
 
-let citymap=new Map();
-
-citymap.set(1,new City(`Kufagrad`, 120000, 120000,1,new Vector3(10000,10000,10000)));
-citymap.set(2,new City(`Vladosburg`, -120000, -120000,2,new Vector3(10000,10000,10000)));
-
-class Road{
-    addfragment(v1,v2,v3){
-
-        this.curvepath.add(new THREE.QuadraticBezierCurve(v1,v2,v3));
-        if(this.curvepath.getLength()==0){
-            citymap.values().filter(()=>{
-                v1.distance
-            });
-
-
-            this.edgepoint1=v1;
-        }
-            this.edgepoint2=v2
-    }
-    isready(){          //построена ли дорога
-
-    }
-    constructor(){
-        this.curvepath=new THREE.CurvePath();
+class TrainClass{
+    constructor(id,obj3d){
+        this.obj3d=obj3d;
+        this.id=id;
     }
 }
-let roadmap=new Map();
-roadmap.set
+export let citymap=new Map();
+
+citymap.set(2,new City(`Kufagrad`, 120000, 120000,2,new Vector3(10000,10000,10000)));
+citymap.set(1,new City(`Vladosburg`, -120000, -120000,1,new Vector3(10000,10000,10000)));
+
+let trainmap=new Map();
+trainmap.set(1, new TrainClass(1,train3dobj));
+
 class SheduleMember{
     constructor(timestampweek,road,train,duration,fromcity,tocity){
         this.timestampweek=timestampweek;
@@ -97,12 +83,16 @@ class SheduleMember{
         this.duration=duration;
         this.fromcity=fromcity;
         this.tocity=tocity;
-
+        this.isreadyforgo=false;  //готово ли к отправлению или в состоянии редактирования
     }
 }
 
 let shedule={
     shedulemap: new Map(),
+    citymap,
+    SheduleMember,
+    clock,
+    trainmap,
 };
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 (async ()=>{
@@ -285,6 +275,9 @@ export async function roaddifinitionclick(objectpath)
 
             road3dobj.angleforuser=angleforuser;
 
+
+
+
             let needquaternion=currod.getWorldQuaternion();
             road3dobj.setRotationFromQuaternion(needquaternion);
 
@@ -326,7 +319,7 @@ export async function roaddifinitionclick(objectpath)
 
             road3dobj.sdvig=sdvig;
             road3dobj.newOrigin=neworigin;
-            road3dobj.rotateOnWorldAxis(axisforuser.normalize(),angleforuser);
+            road3dobj.rotateOnAxis(axisforuser.normalize(),angleforuser);
             road3dobj.updateMatrixWorld();
 
             let distantcorenerleft,distantcornerright;
@@ -509,7 +502,7 @@ export function getnearestcity(pointvect2) {
     train3dobj=await traindifinition('./images/Sci_fi_Train.obj');
     train3dobj.position.set(50000,train3dobj.position.y,50000);
     setInterval(()=>traingonormalization(train3dobj),1000);
-    shedule.shedulemap.set(1, new SheduleMember(1000*60*60*24*1-1000*60*60*20,new Road(), train3dobj, 1000*30),1,2);//выбор поезда доделать время в мс тут
+    //shedule.shedulemap.set(1, new SheduleMember(1000*60*60*24*1-1000*60*60*20,new Road(), train3dobj, 1000*30),1,2);//выбор поезда доделать время в мс тут
 })();
 export  function traingo() {
     /*let curmas;
@@ -557,10 +550,10 @@ export  function traingo() {
 
 }
 
-function fillsheduletable() {
+/*function fillsheduletable() {
     let shedulewind=document.getElementById('RoutesWindow');
 
-}
+}*/
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////TEMPORARY
 (async ()=>{let city1,city2;
     city1=await traindifinition('./images/rotatedcity.obj');
@@ -572,6 +565,9 @@ function fillsheduletable() {
     city2.position.set(-120000,city1.position.y,-120000);
 
 //city2.position.set(-80000,80000,-80000);
-    scene.add(city1, city2);})()
+    scene.add(city1, city2);})();
 /////////////////////////////
 export {train3dobj,volcanoobj3d,canvas,scene,camera,renderer,controls,light,MTLlod,loader,cubetextture,cubemaploader};
+window.shedule=shedule;
+window.SheduleMember=SheduleMember;
+window.clock=clock;
