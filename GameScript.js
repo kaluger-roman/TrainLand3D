@@ -1,3 +1,4 @@
+"use strict"
 import * as THREE from './js/three.js-master/build/three.module.js';
 import {OrbitControls} from './js/three.js-master/examples/jsm/controls/OrbitControls.js';
 import {resizerenderertotal} from "./js/usefuljs.js";
@@ -73,7 +74,6 @@ citymap.set(2,new City(`Kufagrad`, 120000, 120000,2,new Vector3(10000,10000,1000
 citymap.set(1,new City(`Vladosburg`, -120000, -120000,1,new Vector3(10000,10000,10000)));
 
 let trainmap=new Map();
-trainmap.set(1, new TrainClass(1,train3dobj));
 
 class SheduleMember{
     constructor(timestampweek,road,train,duration,fromcity,tocity){
@@ -94,6 +94,8 @@ let shedule={
     clock,
     trainmap,
 };
+let roadtypes=new Set();
+roadtypes.add('start').add('straight').add('left').add('right').add('end');
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 (async ()=>{
     const objLoader = new OBJLoader2();
@@ -386,7 +388,8 @@ export async function roaddifinitionclick(objectpath)
     });});
     return new Promise((resolve => resolve(road3dobj)));
 }//дорога
-export function disigncontrolroadpoints(road3dobj,curroadroute) {//присоединяемый фрагмент дороги и текущий маршрут(массив точек) присоединения параметры
+export function disigncontrolroadpoints(road3dobj,currotecurvepath) {//присоединяемый фрагмент дороги и текущий маршрут(массив точек) присоединения параметры
+    road3dobj.updateWorldMatrix();
     let controlpoints=[];
     road3dobj.children.forEach((value)=>{
         if(value.name.startsWith('controlroadpoint')){
@@ -398,8 +401,8 @@ export function disigncontrolroadpoints(road3dobj,curroadroute) {//присое�
         if (a.name < b.name) return -1;
         if (a.name === b.name) return 0;
     });
-    if (curroadroute.length>0){
-    if (curroadroute[curroadroute.length-1].distanceTo(controlpoints[controlpoints.length-1].getWorldPosition())<curroadroute[curroadroute.length-1].distanceTo(controlpoints[0].getWorldPosition())){
+    if (currotecurvepath.curves.length>0){
+    if (currotecurvepath.getPointAt(1).distanceTo(controlpoints[controlpoints.length-1].getWorldPosition())<currotecurvepath.getPointAt(1).distanceTo(controlpoints[0].getWorldPosition())){
         controlpoints.reverse();
     }
     }
@@ -410,10 +413,12 @@ export function disigncontrolroadpoints(road3dobj,curroadroute) {//присое�
             controlpoints.reverse();
         }
     }
-    let curve = new THREE.CatmullRomCurve3( controlpoints.map(((value) => value.getWorldPosition())));
-    curroadroute.push(...curve.getSpacedPoints(40));//количество точек может варьироваться, просмотреть этот момент
+    let curve = new THREE.CatmullRomCurve3( controlpoints.map(((value) =>value.getWorldPosition())));
+    currotecurvepath.add(curve);
+
+
 }
-export function traingonormalization(curtrain) {
+export function traingonormalization(curtrain, raycastobjmas) {
     curtrain.lookforward();
     let cors=curtrain.cornersystem;
     let intersect;
@@ -436,7 +441,7 @@ export function traingonormalization(curtrain) {
             masrays.push(new THREE.Raycaster(cors.localToWorld((new Vector3()).copy(cors.getObjectByName(`corner${i}`).position)), vector.normalize()));//можно фар и нир понизить
         }
         masrays.forEach((ray, index)=>{
-            intersect = ray.intersectObject(volcanoobj3d, true);//важно флаг тру чтоб проверять загружаемые объекты
+            intersect = ray.intersectObjects(raycastobjmas, true);//важно флаг тру чтоб проверять загружаемые объекты
             if ( (intersect.length >0) && (intersect[0].distance>curtrain.height/50))//
             {
                 flag=true;
@@ -501,71 +506,115 @@ export function getnearestcity(pointvect2) {
 (async ()=>{
     train3dobj=await traindifinition('./images/Sci_fi_Train.obj');
     train3dobj.position.set(50000,train3dobj.position.y,50000);
-    setInterval(()=>traingonormalization(train3dobj),1000);
+   // setInterval(()=>traingonormalization(train3dobj, allroadonmap),1000);
+    trainmap.set(1, new TrainClass(1,train3dobj));
     //shedule.shedulemap.set(1, new SheduleMember(1000*60*60*24*1-1000*60*60*20,new Road(), train3dobj, 1000*30),1,2);//выбор поезда доделать время в мс тут
 })();
-export  function traingo() {
-    /*let curmas;
-    let train;
-    let gener, generdir;
-     function* generatePoints() {
-        for (let i = 0; i < curmas.length; i++) {
-            yield curmas[i];
+export  async function traingo() {
+    return new Promise(resolve => {
+     let cadresinsecond=1000/100;
+     function* generatePoints(addpart,curvepath,reverse) {//реверс- надо ли читать дорогу с конца(когда из другого города в первый)
+         let progress=reverse?1:0;
+         if (reverse){
+             while (progress >0) {
+                 yield curvepath.getPointAt(progress);
+                 progress -= addpart;
+             }
+         }
+         else {
+             while (progress < 1) {
+                 yield curvepath.getPointAt(progress);
+                 progress += addpart;
+             }
+         }
+        return 0;
+    }
+    function* generatedirectionPoints(addpart,curvepath,arccurvelength,train,reverse) {
+        let addtrainsize=train.length/arccurvelength;
+        let progress=reverse?(1-addtrainsize):addtrainsize;
+        if (reverse){
+            while (progress>0){
+                yield curvepath.getPointAt(progress);
+                progress-=addpart;
+            }
+        }
+        else{
+            while (progress<1){
+                yield curvepath.getPointAt(progress);
+                progress+=addpart;
+             }
         }
         return 0;
     }
-    function* generatedirectionPoints() {
-        for (let i = 0; i < curmas.length; i++) {
-            yield curmas[i+25];
-        }
-        return 0;
-    }
-    function rendrpos(time) {
+    function rendrpos(train,gener, generdir, normilizetimer=0,rendrposcounter=0) {//нормалайз тамер чтобы не тратить по много времени на нормализацию делать ее нечасто
+         rendrposcounter++;
+        console.log('я в рендпос1'+performance.now());
          let gen=gener.next();
          let gendir=generdir.next();
-         if (gen.done==false) {
+        console.log('я в рендпос2'+performance.now());
+
+        if (rendrposcounter===cadresinsecond) {
+            window.allowtotick = true;
+            rendrposcounter=0;
+        }
+        else
+            window.allowtotick=false;
+
+         if (gen.done===false) {
+
+             setTimeout(()=>requestAnimationFrame(()=>rendrpos(train,gener, generdir,normilizetimer,rendrposcounter)), 1000/cadresinsecond);//в секунду реальную проходится 25 точек из массива
              train.position.x = gen.value.x;
-             train.position.z = gen.value.y;
-             if(gendir.done==false) {
-                 train.forwarddirrect = new Vector3(gen.value.x - gendir.value.x, 0, gen.value.y - gendir.value.y);
+             train.position.z = gen.value.z;
+             if(gendir.done===false) {
+                 train.forwarddirrect = new Vector3(gen.value.x - gendir.value.x, 0, gen.value.z - gendir.value.z);
              }
-             traingonormalization(train);
-             setTimeout(()=>requestAnimationFrame(rendrpos), 1000/25);//в секунду реальную проходится 25 точек из массива
+             normilizetimer++;
+             if (normilizetimer===1)
+                 traingonormalization(train, allroadonmap);
+             if (normilizetimer>5)
+                 normilizetimer=0;
 
          }
+         else
+             window.allowtotick = true;
 
     }
     for (let shed of shedule.shedulemap.values()){
-        if (clock.getTime()%(1000*60*60**24*7)===shed.timestampweek){
-            train=shed.train;
-            let curvemas=shed.road.curvepath.getSpacedPoints(shed.duration/1000*25);//подгоняем кол-во точек под длительность
-            curmas=curvemas;
-            gener=generatePoints();
-            generdir=generatedirectionPoints();
-            requestAnimationFrame(rendrpos);
+        if ((clock.getTime()+(3*24*3600000)+(3*3600000))%(1000*60*60*24*7)===shed.timestampweek){//отсчет начинается с четверга 1970 года поэтому сдвиг на понедельник
+            let train,gener, generdir;
+            train=shed.train.obj3d;
+            let curvepath=shed.road;
+            let arccurvelength=curvepath.getLength();
+            let duration=shed.duration;
+            let addpartofmoving=1/(duration/1000*cadresinsecond);
 
+            let needreverse=false;
+            if (shed.fromcity.position.distanceTo(new THREE.Vector2(curvepath.getPointAt(0)))>shed.fromcity.position.distanceTo(new THREE.Vector2(curvepath.getPointAt(1))))
+                needreverse=true;
 
+            gener=generatePoints(addpartofmoving,curvepath,needreverse);
+            generdir=generatedirectionPoints(addpartofmoving,curvepath,arccurvelength,train,needreverse);
+            requestAnimationFrame(()=>rendrpos(train,gener, generdir));
             }
-        }*/
-
+        }
+    resolve(0);
+    });
 }
 
-/*function fillsheduletable() {
-    let shedulewind=document.getElementById('RoutesWindow');
 
-}*/
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////TEMPORARY
 (async ()=>{let city1,city2;
     city1=await traindifinition('./images/rotatedcity.obj');
     city2=await traindifinition('./images/rotatedcity.obj');
-    setInterval(()=>traingonormalization(city1),300);
-    setInterval(()=>traingonormalization(city2),300);
+    traingonormalization(city1,[volcanoobj3d]);
+    traingonormalization(city2,[volcanoobj3d]);
 
     city1.position.set(120000,city1.position.y,120000);
     city2.position.set(-120000,city1.position.y,-120000);
 
 //city2.position.set(-80000,80000,-80000);
     scene.add(city1, city2);})();
+
 /////////////////////////////
 export {train3dobj,volcanoobj3d,canvas,scene,camera,renderer,controls,light,MTLlod,loader,cubetextture,cubemaploader};
 window.shedule=shedule;

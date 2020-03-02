@@ -5,6 +5,9 @@
     <title>Play KufaTrains</title>
     <link rel="stylesheet" href="PLAYCSS.css">
     <link rel="stylesheet" href="routescss.css">
+    <link rel="stylesheet" href="TopPanelCss.css">
+    <link rel="stylesheet" href="charcaterscss.css">
+
 </head>
 <body>
 
@@ -16,6 +19,16 @@
         <div id="mainpanel">
             <img id='arrowdp' src="images/arrowdown.png">
             <img id="addroadbtn" src="images/roadicon.png">
+            <div id="clippingroadfloatpanel">
+                <div id="roadfloatpanel">
+                    <img CLASS="addroadbtn" id="roadstraightbtn" src="images/roadicon.png">
+                    <img CLASS="addroadbtn" src="images/roadicon.png">
+                    <img CLASS="addroadbtn" src="images/roadicon.png">
+                    <img CLASS="addroadbtn" src="images/roadicon.png">
+                    <img CLASS="addroadbtn" src="images/roadicon.png">
+                </div>
+            </div>
+
         </div>
 
     </div>
@@ -28,9 +41,12 @@
             <span class="iconheadersleftpanel">Маршруты</span>
         </div>
     </div>
-    <div id="avatar">картинка персонажа</div>
+    <div id="avatar" ></div>
+    <div id="CharacterWindow"></div>
     <div id="MAP">картинка персонажа</div>
-    <div id="toppanel">картинка персонажа</div>
+    <div id="toppanel">
+
+    </div>
     <div id="clock"></div>
     <div id="RoutesWindow">
         <h1 id="routwndheader">Мои Маршруты</h1>
@@ -49,13 +65,15 @@
 </script>
 <script type="module">//скрипт часов
     import {clock, traingo} from "./GameScript.js";
-
+   //параметр для синхронизации, когда надо подождать действий до того как тикнут часы
+    window.allowtotick=true;
     let clockelem=document.getElementById('clock');
 
     let formatter = new Intl.DateTimeFormat("ru", {
         year: "numeric",
         month: "long",
         day: "numeric",
+        weekday: "long",
         hour:'numeric',
         minute:'numeric'
     });
@@ -63,11 +81,17 @@
     let settimeoutclockparametr=1000;
     clock.clocktimedelta=clocktimedelta;
     clock.settimeoutclockparametr=settimeoutclockparametr;
-    setTimeout(function clockgo() {
+
+    setTimeout(async function clockgo() {
+        while (!allowtotick) {
+            await new Promise(resolve => setTimeout(() => resolve(0), 0));
+        }
+
         clock.setTime(clock.getTime()+clocktimedelta);
         clockelem.innerHTML=(formatter.format(clock));
         traingo();
         setTimeout(clockgo, settimeoutclockparametr);
+        console.log('я в часах'+performance.now())
     },settimeoutclockparametr);
 
 </script>
@@ -176,5 +200,9 @@
 <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 <script defer src="reactcomponents.js" type="text/babel"></script>
+<script defer src="toppanelreact.js" type="text/babel"></script>
+<script defer src="characterpanelcomps.js" type="text/babel"></script>
+
+
 </body>
 </html>

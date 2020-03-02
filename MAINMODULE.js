@@ -66,7 +66,7 @@ citiesbtn.onclick=()=>{
 
 let allroadonmap=[];//все дороги нак арте
 let allroutes=new Map();//все маршруты(связанные куски дорог)
-let allroutespoints=new Map()//маршруты в виде серии точек
+let allrotescurvepaths=new Map();
 let addroadactive=false;//если тру, то дорога перестанет липнуть к мышке и встанет на карту
 let road;//3d obj
 let axisforuser=new THREE.Vector3(0,1,0),angleforuser=0;//угол поворота дороги
@@ -115,12 +115,12 @@ function putroad(e){//ставит дорогу там где она сейча�
         allroutes.set(++idforallroutes, _mas);
         _mas.push(road);
         road.routerelative=idforallroutes;
-        allroutespoints.set(idforallroutes,[]);
-        disigncontrolroadpoints(road,allroutespoints.get(road.routerelative));
+        allrotescurvepaths.set(idforallroutes, new THREE.CurvePath());
+        disigncontrolroadpoints(road,allrotescurvepaths.get(road.routerelative));
     }
     else{
         allroutes.get(road.routerelative).push(road);
-        disigncontrolroadpoints(road,allroutespoints.get(road.routerelative));
+        disigncontrolroadpoints(road,allrotescurvepaths.get(road.routerelative));
     }
 
     document.removeEventListener("keydown", rotataroad);
@@ -187,7 +187,23 @@ function adrod(cancelsdvig){
     if(addroadactive)
         setTimeout(()=>adrod(cancelsdvig),100);
 }
-addroad.onclick=async ()=>{
+let roadpanopen=false;
+let roadpan=document.getElementById('roadfloatpanel');
+addroad.onclick=(event)=>{
+    event.stopPropagation();
+    if(roadpanopen===false){
+        roadpan.classList.remove('hidepanellroad');
+        roadpan.classList.add('openpanellroad');
+        roadpanopen=true;
+    }
+    else {
+        roadpan.classList.remove('openpanellroad');
+        roadpan.classList.add('hidepanellroad');
+        roadpanopen=false;
+    }
+};
+let roadstraightbtn=document.getElementById('roadstraightbtn');
+roadstraightbtn.onclick=async ()=>{
     canvas.removeEventListener('mousedown',f1,{capture:false});
     cancelsdvig=false;
     canvas.addEventListener('mousedown',f1,{capture:false});
@@ -204,7 +220,6 @@ addroad.onclick=async ()=>{
             road.children[i].geometry.dispose();
             road.remove( road.children[i]);
         }
-        console.log(allroadonmap.indexOf(road));
        //allroadonmap.splice(allroadonmap.indexOf(road)+1,1);
         scene.remove(road);
         road=null;
@@ -212,4 +227,5 @@ addroad.onclick=async ()=>{
         document.removeEventListener("keydown", rotataroad);
     }
 };
-window.shedule.allroutespoints=allroutespoints;
+window.shedule.allrotescurvepaths=allrotescurvepaths;
+window.allroadonmap=allroadonmap;

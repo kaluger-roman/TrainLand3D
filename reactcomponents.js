@@ -3,7 +3,7 @@
 let shedule=window.shedule;
 let SheduleMember=window.shedule.SheduleMember;
 let citymap=window.shedule.citymap;
-let allroutespoints= window.shedule.allroutespoints;
+let allrotescurvepaths=window.shedule.allrotescurvepaths;
 let clock=window.clock;
 function Row(props) {
 
@@ -16,7 +16,7 @@ function Row(props) {
             <Cellrect name={props.names[4]} keyrow={props.keyrow} clssname={props.clssname} value={props.values.daygo} onChange={props.onChange} children={props.children.dayofweek}/>
             <Cellrectinput name={props.names[5]} keyrow={props.keyrow} clssname={props.clssname} value={props.values.timecome} onChange={props.onChange}/>
             <Cellrect name={props.names[6]} keyrow={props.keyrow} clssname={props.clssname} value={props.values.daycome} onChange={props.onChange} children={props.children.dayofweek}/>
-            <Cellrect name={props.names[7]} keyrow={props.keyrow} clssname={props.clssname} value={props.values.routnum} onChange={props.onChange} children={props.children.allroutespoints}/>
+            <Cellrect name={props.names[7]} keyrow={props.keyrow} clssname={props.clssname} value={props.values.routnum} onChange={props.onChange} children={props.children.allrotescurvepaths}/>
         </form>
     );
 }
@@ -57,7 +57,7 @@ class NewRowManager extends React.Component{//"trainid" fromcity tocity
 
         setInterval(()=>{
             if(getComputedStyle(this.routeswindow).visibility==='visible') {
-                this.options.allroutespoints=Array.from(allroutespoints.keys()).map((value => <option key={value} value={`ЖД линия [${value}]`}>ЖД линия [${value}]</option> ));
+                this.options.allrotescurvepaths=Array.from(allrotescurvepaths.keys()).map((value => <option key={value} value={`ЖД линия [${value}]`}>ЖД линия [${value}]</option> ));
                 this.options.trains=Array.from(shedule.trainmap.keys()).map((value => <option key={value.id} value={`Состав № [${value}]`}>`Состав № [${value}]`</option> ));
             }
         },5000);
@@ -73,8 +73,6 @@ class NewRowManager extends React.Component{//"trainid" fromcity tocity
         this.setState({
             rows:newrows,
         });
-        console.log(this.state.rows);
-
     }
     addrow(){
         let newrows=this.state.rows.concat({
@@ -94,11 +92,10 @@ class NewRowManager extends React.Component{//"trainid" fromcity tocity
     }
     plusclick(){
         this.addrow();
-       // this.options.allroutespoints=Array.from(allroutespoints.keys()).map((value => <option key={value} value={`ЖД линия [${value}]`}>ЖД линия [${value}]</option> ));
     }
     options={
         cities: Array.from(citymap.values()).map((value)=>value.name+`[${value.id}]`).map(value1=><option key={value1} value={value1}>{value1}</option>),
-        allroutespoints: Array.from(allroutespoints.keys()).map((value => <option key={value.id} value={`ЖД линия [${value}]`}>`ЖД линия [${value}]`</option> )),
+        allrotescurvepaths: Array.from(allrotescurvepaths.keys()).map((value => <option key={value.id} value={`ЖД линия [${value}]`}>`ЖД линия [${value}]`</option> )),
         trains:Array.from(shedule.trainmap.keys()).map((value => <option key={value.id} value={`Состав № [${value}]`}>`Состав № [${value}]`</option> )),
         dayofweek:(['ПН',"ВТ","СР","ЧТ","ПТ",'СБ','ВС']).map(value => <option key={value} value={value}>{value}</option>),
     };
@@ -106,11 +103,20 @@ class NewRowManager extends React.Component{//"trainid" fromcity tocity
     names=['trainid','fromcity','tocity','timego','daygo','timecome','daycome','routnum'];
     routeswindow=document.getElementById('RoutesWindow');
     deleteregime=false;
-    deleterow(e){
-        e.stopPropagation();
-
+    async deleterow(e){
+        await e.persist();
+        e.preventDefault();
         if(this.deleteregime){
-            let formdel=e.target;
+            e.stopPropagation();
+            let divforasking=document.getElementById('divforasking');
+            divforasking.style.visibility='visible';
+            ReactDOM.render(<AskedWindow />, document.getElementById("divforasking"));
+            let responseuser=await this.askuser();
+            divforasking.style.visibility='hidden';
+            if (!responseuser)
+                return;
+
+            let formdel=e.target.form;
             let rowdelid=this.state.rows[formdel.getAttribute("idrow")];
             let newrows=this.state.rows.concat();
             newrows.splice(rowdelid,1);
@@ -119,8 +125,24 @@ class NewRowManager extends React.Component{//"trainid" fromcity tocity
                 rows:newrows,
             }));
         }
-        else {
+    }
+    async askuser(){
+        let response=undefined;
+        function handler(e) {
+            e.stopPropagation();
+            response=e.response;
+            this.removeEventListener('userresponse',handler)
+
         }
+        this.routeswindow.addEventListener('userresponse',handler);
+        await new Promise((resolve => {
+            setTimeout(function f (){
+                if (response===undefined)
+                 setTimeout(f,300);
+                else resolve(response);
+             },300);
+        }));
+        return response === 'yes';
     }
     render(){
         const masrow=this.masrow.concat();
@@ -134,22 +156,22 @@ class NewRowManager extends React.Component{//"trainid" fromcity tocity
                     flagout=true;
             });
             if (flagout===false) {
-                const weekdaygo = this.options.dayofweek.indexOf(value.daygo) + 1;
+                const weekdaygo = this.options.dayofweek.map(value1 => value1.key).indexOf(value.daygo);
                 const delivertimego = value.timego.split(":");
                 const hourgo = delivertimego[0];
                 const minutesgo = delivertimego[1];
                 const timestampgo = weekdaygo * 24 * 3600 * 1000 + (+hourgo) * 3600 * 1000 + (+minutesgo) * 60 * 1000;
 
-                const weekdaycome = this.options.dayofweek.indexOf(value.daycome) + 1;
+                const weekdaycome = this.options.dayofweek.map(value1 => value1.key).indexOf(value.daycome);;
                 const delivertimecome = value.timecome.split(":");
                 const hourcome = delivertimecome[0];
                 const minutescome = delivertimecome[1];
                 const timestampcome = weekdaycome * 24 * 3600 * 1000 + (+hourcome) * 3600 * 1000 + (+minutescome) * 60 * 1000;
 
-                const duration = (timestampcome - timestampgo) / (clock.clocktimedelta / clock.settimeoutclockparametr);
+                const duration = Math.abs((timestampcome - timestampgo) / (clock.clocktimedelta / clock.settimeoutclockparametr));
 
                 const roadindex = value.routnum.match(/\d+/);
-                const road = allroutespoints.get(+roadindex[0]);
+                const road = allrotescurvepaths.get(+roadindex[0]);
 
                 const trainindex = value.trainid.match(/\d+/);
                 const train = shedule.trainmap.get(+trainindex[0]);
@@ -158,6 +180,8 @@ class NewRowManager extends React.Component{//"trainid" fromcity tocity
                 const citytoid = value.tocity.match(/\d+/);
                 const cityfrom = citymap.get(+cityfromid[0]);
                 const cityto = citymap.get(+citytoid[0]);
+
+
 
                 const newshedulemember=new SheduleMember(timestampgo, road, train, duration, cityfrom, cityto);
                 newshedulemember.isreadyforgo=true;
@@ -174,14 +198,18 @@ class NewRowManager extends React.Component{//"trainid" fromcity tocity
 
         });
         if (appendincorrectinputmsg)
-            textformessage+=`ОДИН ИЛИ НЕСКОЛЬКО ПАРАМЕТРОВ ОТПРАВЛЕНИЯ НЕ ОПРЕДЕЛЕНЫ(ВЫДЕЛЕНЫ КРАСНЫМ)`;
+            textformessage+=`ОДИН ИЛИ НЕСКОЛЬКО ПАРАМЕТРОВ ОТПРАВЛЕНИЯ НЕ ОПРЕДЕЛЕНЫ\n`;
+        if (this.deleteregime)
+            textformessage="ОСТОРОЖНО: ВКЛЮЧЕН РЕЖИМ УДАЛЕНИЯ";
+        console.log(shedule);
         return(
             <div id="NewRowManager">
                 <div id="innerrowgroup">{masrow}</div>
             <img src="images/plusshedule.png" onClick={()=>this.plusclick()} id="plusshedule" key="plusshedule"/>
             <img src="images/krestikdlyokon.png" id="exitroutwindowbtn"
-                 onClick={()=>{ if(this.deleteregime) this.deleteregime=false; else this.deleteregime=true;}} key="exitroutwindowbtn"/>
+                 onClick={()=>{ if(this.deleteregime) this.deleteregime=false; else this.deleteregime=true;this.setState({});}} key="exitroutwindowbtn"/>
            <Messagebox text={textformessage}/>
+           <div id='divforasking'></div>
             </div>
         );
     }
@@ -190,12 +218,22 @@ class AskedWindow extends React.Component{
     constructor(props) {
         super(props);
     }
+    RoutesWindow=document.getElementById('RoutesWindow');
     render(){
         return(
-            <div>
-                <span>Вы уверены, что хотите удалить рейс? Это необратимо!!!</span>
-                <img onClick={props.onCklick} src='./images/galochka.png'/>
-                <img onClick={props.onCklick} src='./images/krestik.png'/>
+            <div id='answeruser'>
+                <div>Вы уверены, что хотите удалить рейс? Это необратимо!!!</div>
+
+                <img style={{float: 'left'}} name='yes' className='iconresp' src='./images/galochka.png' onClick={()=>{
+                    let userresponseevent=new Event('userresponse');
+                    userresponseevent.response='yes';
+                    this.RoutesWindow.dispatchEvent(userresponseevent);
+                }} />
+                <img style={{float: 'right'}} name='no' className='iconresp' onClick={()=>{
+                    let userresponseevent=new Event('userresponse');
+                    userresponseevent.response='no';
+                    this.RoutesWindow.dispatchEvent(userresponseevent);
+                }} src='./images/krestik.png'/>
             </div>
         );
     }
