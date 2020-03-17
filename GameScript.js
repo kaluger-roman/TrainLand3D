@@ -21,11 +21,13 @@ const renderer=new THREE.WebGLRenderer({
     logarithmicDepthBuffer: true,
 });
 renderer.autoClearColor = false;
+renderer.setScissorTest(true);
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 let controls = new OrbitControls(camera, renderer.domElement);
 controls.enableKeys=false;
-controls.target.set(0, 8000, 0);
+let campos=camera.position;
+controls.target.set(0,0,0);
 
 const light = new THREE.DirectionalLight(0xFFFFFF, 1);
 light.position.set(0, 10000, 0);
@@ -46,6 +48,37 @@ const cubetextture = cubemaploader.load([
 scene.background = cubetextture;
 //задний план
 
+export const camera2 = new THREE.PerspectiveCamera(//для минмикарты
+    60,
+    2,
+    0.1,
+    1000000,
+);
+let targpos=controls.target;
+camera2.position.set(targpos.x,targpos.y+800000, targpos.z);
+camera2.lookAt(targpos.x,targpos.y-800000, targpos.z);
+
+export function setScissorForElement(elem) {
+    const canvasRect = canvas.getBoundingClientRect();
+    const elemRect = elem.getBoundingClientRect();
+    const pixelRatio = window.devicePixelRatio;
+
+    // compute a canvas relative rectangle
+    const right = (Math.min(elemRect.right, canvasRect.right) - canvasRect.left)* pixelRatio | 0;
+    const left = Math.max(0, elemRect.left - canvasRect.left)* pixelRatio | 0;
+    const bottom = (Math.min(elemRect.bottom, canvasRect.bottom) - canvasRect.top)* pixelRatio | 0;
+    const top = Math.max(0, elemRect.top - canvasRect.top)* pixelRatio | 0;
+
+    const width = Math.min(canvasRect.width* pixelRatio | 0, right - left);
+    const height = Math.min(canvasRect.height* pixelRatio | 0, bottom - top);
+
+    // setup the scissor to only render to that part of the canvas
+    const positiveYUpBottom = (canvasRect.height* pixelRatio | 0) - bottom;
+    renderer.setScissor(left, positiveYUpBottom, width, height);
+    renderer.setViewport(left, positiveYUpBottom, width, height);
+    return width / height;
+}
+
 let servertimestamp=0;//получить с сервера
 export let clock=new Date(servertimestamp);
 
@@ -63,9 +96,10 @@ class City{
 }
 
 class TrainClass{
-    constructor(id,obj3d){
+    constructor(id,obj3d,capacity){
         this.obj3d=obj3d;
         this.id=id;
+        this.capacity=capacity;
     }
 }
 export let citymap=new Map();
@@ -76,6 +110,20 @@ citymap.set(1,new City(`Vladosburg`, -120000, -120000,1,new Vector3(10000,10000,
 let trainmap=new Map();
 
 class SheduleMember{
+    curpasnumber;
+    standardprice={
+        poor:0,
+        middle:0,
+        premium:0,
+    };
+    ticketcount={
+        poor:0,
+        middle:0,
+        premium:0,
+    };
+    totalpascount;
+    totalprofit;
+    inmovingnow;
     constructor(timestampweek,road,train,duration,fromcity,tocity){
         this.timestampweek=timestampweek;
         this.road=road;
@@ -83,6 +131,7 @@ class SheduleMember{
         this.duration=duration;
         this.fromcity=fromcity;
         this.tocity=tocity;
+        this.capacity=train.capacity;
         this.isreadyforgo=false;  //готово ли к отправлению или в состоянии редактирования
     }
 }
@@ -109,6 +158,20 @@ roadtypes.add('start').add('straight').add('left').add('right').add('end');
             scene.add(root);
             root.modelBoundingBox = new THREE.Box3().setFromObject(root);
             volcanoobj3d=root;
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////TEMPORARY
+            (async ()=>{let city1,city2;
+                city1=await traindifinition('./images/rotatedcity.obj');
+                city2=await traindifinition('./images/rotatedcity.obj');
+                traingonormalization(city1,[volcanoobj3d]);
+                traingonormalization(city2,[volcanoobj3d]);
+
+                city1.position.set(120000,city1.position.y,120000);
+                city2.position.set(-120000,city1.position.y,-120000);
+
+//city2.position.set(-80000,80000,-80000);
+                scene.add(city1, city2);})();
+
+/////////////////////////////
         });
     })
 
@@ -507,7 +570,7 @@ export function getnearestcity(pointvect2) {
     train3dobj=await traindifinition('./images/Sci_fi_Train.obj');
     train3dobj.position.set(50000,train3dobj.position.y,50000);
    // setInterval(()=>traingonormalization(train3dobj, allroadonmap),1000);
-    trainmap.set(1, new TrainClass(1,train3dobj));
+    trainmap.set(1, new TrainClass(1,train3dobj,300));
     //shedule.shedulemap.set(1, new SheduleMember(1000*60*60*24*1-1000*60*60*20,new Road(), train3dobj, 1000*30),1,2);//выбор поезда доделать время в мс тут
 })();
 export  async function traingo() {
@@ -601,21 +664,48 @@ export  async function traingo() {
     });
 }
 
+    function passengersit(curshedulemember) {
+        let coafspros;
+        let privedtime=(clock.getTime()+(3*24*3600000)+(3*3600000));
+        let allweeks=privedtime%(1000*60*60*24*7);
+        let gotime=allweeks*(1000*60*60*24*7)+curshedulemember.timestampweek;
+        if (privedtime<gotime)
+        coafspros=gotime-privedtime;
+        else
+           coafspros=gotime +(1000*60*60*24*7)-privedtime;
+        let countofpoortickets,countofmiddletickets,countofpremiumtickets;
+        if(curshedulemember.capacity>curshedulemember.curpasnumber) {
+            countofpoortickets = Math.round(Math.random()*curshedulemember.capacity/100);
+            countofmiddletickets = Math.round(Math.random()*curshedulemember.capacity/100);
+            countofpremiumtickets = Math.round(Math.random()*curshedulemember.capacity/100);
+            curshedulemember.totalprofit+=(countofpoortickets*curshedulemember.standardprice.poor*coafspros+
+                countofmiddletickets*curshedulemember.standardprice.middle*coafspros+
+                countofpremiumtickets*curshedulemember.standardprice.premium*coafspros);
+            curshedulemember.ticketcount.poor+=countofpoortickets;
+            curshedulemember.ticketcount.middle+=countofmiddletickets;
+            curshedulemember.ticketcount.premium+=countofpremiumtickets;
+            curshedulemember.totalpascount+=(countofpremiumtickets+countofmiddletickets+countofpoortickets);
+        }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////TEMPORARY
-(async ()=>{let city1,city2;
-    city1=await traindifinition('./images/rotatedcity.obj');
-    city2=await traindifinition('./images/rotatedcity.obj');
-    traingonormalization(city1,[volcanoobj3d]);
-    traingonormalization(city2,[volcanoobj3d]);
+    }
+    function addMoney(){
+        if(!(+currentuser.money))
+            currentuser.money=0;
+        let newmoney= currentuser.money+=5;
+        window.currentuser.money=newmoney;
+        Window.renderTopPanel();
+    }
+    export function payforMoney(){
 
-    city1.position.set(120000,city1.position.y,120000);
-    city2.position.set(-120000,city1.position.y,-120000);
+    }
+    setInterval(()=>addMoney(),1000)
+    setTimeout(function f(){
+        shedule.shedulemap.forEach(((value) =>{
+            passengersit(value);
+        }));
+        setTimeout(f,3000);
+    },3000);
 
-//city2.position.set(-80000,80000,-80000);
-    scene.add(city1, city2);})();
-
-/////////////////////////////
 export {train3dobj,volcanoobj3d,canvas,scene,camera,renderer,controls,light,MTLlod,loader,cubetextture,cubemaploader};
 window.shedule=shedule;
 window.SheduleMember=SheduleMember;

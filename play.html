@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="routescss.css">
     <link rel="stylesheet" href="TopPanelCss.css">
     <link rel="stylesheet" href="charcaterscss.css">
+    <link rel="stylesheet" href="citieswindow.css">
+
 
 </head>
 <body>
@@ -43,7 +45,8 @@
     </div>
     <div id="avatar" ></div>
     <div id="CharacterWindow"></div>
-    <div id="MAP">картинка персонажа</div>
+    <div id="citieswindow"></div>
+    <div id="MAP"></div>
     <div id="toppanel">
 
     </div>
@@ -57,8 +60,8 @@
         <span class="tablerouteheader">Прибытие</span>
         <span class="tablerouteheader">ЖД линия</span>
         <div id="groupofrows"></div>
-
     </div>
+    <div id="moreinfowindow"></div>
 </div>
 <script src="MAINMODULE.js" type="module">
 
@@ -102,7 +105,9 @@
     import {OBJLoader2} from './js/three.js-master/examples/jsm/loaders/OBJLoader2.js';
     import {Vector3} from "./js/three.js-master/src/math/Vector3.js";
     import {Plane} from "./js/three.js-master/src/math/Plane.js";
-    import {traingo,train3dobj,volcanoobj3d,canvas,scene,camera,renderer,controls,light,MTLlod,loader,cubemaploader,cubetextture,roaddifinitionclick} from"./GameScript.js";
+    import {traingo,train3dobj,volcanoobj3d,canvas,scene,camera,renderer,controls,light,MTLlod,loader,cubemaploader,cubetextture,roaddifinitionclick,setScissorForElement,camera2} from"./GameScript.js";
+
+    let zoomcam2=800000;//высота миникарты над местностью
     {
          //трекбол не работает когда камера на оси у, флацй надо передавать 12 в апдейт дела
         let curbtns={};
@@ -114,6 +119,12 @@
                 delete curbtns[event.code];
                 movecamera(event)}
             , false);
+        function minmapobserve() {
+            let campos=camera.position;
+            let targpos=controls.target;
+            camera2.position.set(targpos.x,targpos.y+zoomcam2, targpos.z);
+            camera2.lookAt(targpos.x,targpos.y-zoomcam2, targpos.z);
+        }
         function movecamera(event) {             //https://learn.javascript.ru/task/check-sync-keydown доделать чтобы по диагонали
             let z = controls.target.z;
             let y = controls.target.y;
@@ -130,6 +141,7 @@
                 controls.target.set(x + arvect.x, y, z + arvect.z);
                 camera.updateProjectionMatrix();
                 controls.update();
+                minmapobserve();
                 return;
             }
             else if(curbtns.KeyW && curbtns.KeyA){
@@ -138,6 +150,7 @@
                 controls.target.set(x + arvect.x, y, z + arvect.z);
                 camera.updateProjectionMatrix();
                 controls.update();
+                minmapobserve();
                 return;;
             }
             else if(curbtns.KeyS && curbtns.KeyA){
@@ -146,6 +159,7 @@
                 controls.target.set(x - arvect.x, y, z - arvect.z);
                 camera.updateProjectionMatrix();
                 controls.update();
+                minmapobserve();
                 return;
             }
             else if(curbtns.KeyS && curbtns.KeyD){
@@ -154,6 +168,7 @@
                 controls.target.set(x - arvect.x, y, z - arvect.z);
                 camera.updateProjectionMatrix();
                 controls.update();
+                minmapobserve();
                 return;
             }
             else if(curbtns.KeyS && curbtns.KeyW){
@@ -184,24 +199,42 @@
             }
             camera.updateProjectionMatrix();
             controls.update();
+            minmapobserve();
+
         }
     }//контролы и  камера
     requestAnimationFrame( render );
 
     function render() {
+
         resizerenderertotal(renderer, camera);
+
+            const aspect1 = setScissorForElement(document.querySelector('#canv'));
+            camera.aspect = aspect1;
+            camera.updateProjectionMatrix();
+            renderer.render(scene, camera);
+            const aspect = setScissorForElement(document.querySelector('#MAP'));
+            camera2.aspect = aspect;
+            camera2.updateProjectionMatrix();
+            renderer.render(scene, camera2);
         controls.update();
-        renderer.render( scene, camera );
+
+
+
         requestAnimationFrame( render);
     }
 </script>
-
 <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+<script defer src="./userinfo.js" type="text/babel"></script>
+
 <script defer src="reactcomponents.js" type="text/babel"></script>
 <script defer src="toppanelreact.js" type="text/babel"></script>
 <script defer src="characterpanelcomps.js" type="text/babel"></script>
+<script defer src="./citiesreactwindow.js" type="text/babel"></script>
+
+
 
 
 </body>

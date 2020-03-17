@@ -1,7 +1,11 @@
 "use strict"
+let PanelContext=React.createContext(currentuser);
 class Toppanelreact extends React.Component{
     constructor(props){
         super(props);
+        this.state={
+
+        };
     }
     componentDidMount() {
 
@@ -10,13 +14,29 @@ class Toppanelreact extends React.Component{
 
         return(
             <div id="toppanelreact">
-                <Sliceofinfo imgname='levelicon' val='/' text='Уровень'/>
-                <Sliceofinfo imgname='expsstaricon' val='/' text='Опыт'/>
-                <Sliceofinfo imgname='monetaicon' val='/' text='Баблишко'/>
-                <Sliceofinfo imgname='book' val='/'  text='Знания'/>
-                <Sliceofinfo imgname='skipetr' val='/' text='Влияние'/>
-                <Sliceofinfo imgname='citiicin' val='/' text='Охват'/>
-                <Sliceofinfo imgname='parovozicon' val='/' text='Свободно'/>
+                <PanelContext.Provider value={window.currentuser}>
+                    <PanelContext.Consumer>
+                        { context=><Sliceofinfo imgname='levelicon' val={context.level} text='Уровень'/>}
+                    </PanelContext.Consumer>
+                    <PanelContext.Consumer>
+                        { context=><Sliceofinfo imgname='expsstaricon' val={context.expirience} text='Опыт'/>}
+                    </PanelContext.Consumer>
+                    <PanelContext.Consumer>
+                        { context=><Sliceofinfo imgname='monetaicon' val={context.money} text='Баблишко'/>}
+                    </PanelContext.Consumer>
+                    <PanelContext.Consumer>
+                            { context=><Sliceofinfo imgname='knowledgepointsicon' val={context.knowledgepoints}  text='Знания'/>}
+                    </PanelContext.Consumer>
+                    <PanelContext.Consumer>
+                        { context=>  <Sliceofinfo imgname='vliyanieicon' val={context.power} text='Влияние'/>}
+                    </PanelContext.Consumer>
+                    <PanelContext.Consumer>
+                        { context=><Sliceofinfo imgname='citiicin' val='/' text='Охват'/>}
+                    </PanelContext.Consumer>
+                    <PanelContext.Consumer>
+                        { context=><Sliceofinfo imgname='parovozicon' val={context.trains} text='Свободно'/>}
+                    </PanelContext.Consumer>
+                </PanelContext.Provider>
             </div>
          );
     }
@@ -32,4 +52,7 @@ function Sliceofinfo(props){
       </div>
     );
 }
-ReactDOM.render(<Toppanelreact />, document.getElementById("toppanel"));
+Window.renderTopPanel=function renderTopPanel(){
+    ReactDOM.render(<Toppanelreact />, document.getElementById("toppanel"));
+}
+Window.renderTopPanel();
